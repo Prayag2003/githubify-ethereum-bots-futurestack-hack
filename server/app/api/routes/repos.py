@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import RepoRequest
-from app.services import repo_manager, ast_parser
+from app.services import repo_manager
 from app.utils.response import StandardResponse
 import subprocess
 import logging

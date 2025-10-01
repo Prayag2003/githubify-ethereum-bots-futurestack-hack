@@ -84,7 +84,6 @@ def get_language(ext: str) -> Language:
             LANGUAGES[ext] = Language(module.language())
         except Exception as e:
             raise ValueError(f"Failed to load language {lang_name}: {e}")
-
     return LANGUAGES[ext]
 
 
@@ -122,8 +121,6 @@ def build_graph(code: str, lang: Language) -> Dict:
 def load_codebase_as_graph_docs(repo_root) -> List[Document]:
     """Load codebase files and convert to graph documents."""
     docs: List[Document] = []
-    # repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-    
     print(f"Scanning codebase from: {repo_root}")
     
     # Directories to skip
@@ -138,7 +135,7 @@ def load_codebase_as_graph_docs(repo_root) -> List[Document]:
     skip_files = {
         '.gitignore', '.env', '.env.local', '.env.development',
         '.env.production', 'package-lock.json', 'yarn.lock',
-        'poetry.lock', 'requirements.txt', 'setup.py', 'Dockerfile'
+        'poetry.lock'
     }
     
     file_count = 0
