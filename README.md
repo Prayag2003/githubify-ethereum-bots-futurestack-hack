@@ -2,54 +2,43 @@
 
 A tool to analyze GitHub repositories.
 
-## 🛠 Install Poetry
-
-[Poetry](https://python-poetry.org/) is a dependency management and packaging tool for Python.
-
-### macOS/Linux
-
-```bash
-curl -sSL https://install.python-poetry.org | python3 -
-```
-
-Verify installation:
-
-```bash
-poetry --version
-```
-
-Add Poetry to your PATH:
-
-### macOS/Linux
-
-```bash
-export PATH="/Users/$USER/.local/bin:$PATH"
-```
+## 🛠 Install UV
 
 ## Setup Instructions
 
 1. Clone the repository:
 
 ```bash
-git clone https://www.github.com/Prayag2003/githubify-v1
+git clone https://github.com/Prayag2003/githubify-ethereum-bots-futurestack-hack
+cd githubify-ethereum-bots-futurestack-hack
 ```
 
 2. Navigate to project directory:
 
 ```bash
-cd githubify-v1/server
+cd server
 ```
 
-3. Install dependencies using Poetry:
+3. Install dependencies using UV:
 
 ```bash
-poetry install
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
 ```
 
-4. Start the development server:
+4. Build the grammar parser
 
 ```bash
-poetry run uvicorn app.main:app --reload
+cd app/
+bash automate.sh
+python parser/lang_build.py
+```
+
+5. Start the development server:
+
+```bash
+uvicorn app.main:app --reload
 ```
 
 ## API Usage
