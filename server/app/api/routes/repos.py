@@ -21,7 +21,7 @@ def ingest_repo(payload: RepoRequest):
         repo_id = repo_manager.clone_repo(payload.github_url)
 
         # Step 2: AST Parser
-        # codebase = load_codebase_as_graph_docs("repos/" + repo_id)
+        codebase = load_codebase_as_graph_docs("repos/" + repo_id)
         # print("codebase\n", codebase)
 
         # Step 3: Return response
