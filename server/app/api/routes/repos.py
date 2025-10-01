@@ -1,9 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from app.models.schemas import RepoRequest
-from app.services import repo_manager
+from app.services import repo_manager, ast_parser
 from app.utils.response import StandardResponse
 import subprocess
 import logging
+import os
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -11,14 +12,25 @@ logger = logging.getLogger(__name__)
 @router.post("/ingest")
 def ingest_repo(payload: RepoRequest):
     """
-    Clone and parse a repository from GitHub URL.
+    Clone, parse a repository from GitHub URL, and store AST JSON per file.
     Returns standardized success or error response.
     """
     try:
-        repo_id = repo_manager.clone_repo(payload.github_url)
+        # Step 1: Clone repo
+        repo_id, repo_path = repo_manager.clone_repo(payload.github_url)
+
+        # Step 2: Parse repo files into JSON
+        parsed_files = ast_parser.parse_repo_to_json(repo_id, repo_path)
+
+        # Step 3: Return response
         return StandardResponse.success(
-            {"repo_id": repo_id, "status": "ingested"},
-            message="Repository ingested successfully."
+            {
+                "repo_id": repo_id,
+                "status": "ingested",
+                "parsed_files_count": len(parsed_files),
+                "parsed_files": parsed_files
+            },
+            message="Repository ingested and parsed successfully."
         )
     except subprocess.CalledProcessError as e:
         logger.error(f"Git clone failed: {e}")

@@ -1,0 +1,7 @@
+fastapi
+uvicorn
+requests
+python-dotenv
+cerebras-cloud-sdk
+pinecone
+tree-sitter==0.20.4
