@@ -27,15 +27,7 @@ source .venv/bin/activate
 uv pip install -r requirements.txt
 ```
 
-4. Build the grammar parser
-
-```bash
-cd app/
-bash automate.sh
-python parser/lang_build.py
-```
-
-5. Start the development server:
+4. Start the development server:
 
 ```bash
 uvicorn app.main:app --reload
