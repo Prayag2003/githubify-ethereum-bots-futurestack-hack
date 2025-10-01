@@ -5,6 +5,7 @@ from app.utils.response import StandardResponse
 import subprocess
 import logging
 import os
+from app.parser.ast_parser import load_codebase_as_graph_docs
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -17,18 +18,19 @@ def ingest_repo(payload: RepoRequest):
     """
     try:
         # Step 1: Clone repo
-        repo_id, repo_path = repo_manager.clone_repo(payload.github_url)
+        repo_id = repo_manager.clone_repo(payload.github_url)
 
-        # Step 2: Parse repo files into JSON
-        parsed_files = ast_parser.parse_repo_to_json(repo_id, repo_path)
+        # Step 2: AST Parser
+        # codebase = load_codebase_as_graph_docs("repos/" + repo_id)
+        # print("codebase\n", codebase)
 
         # Step 3: Return response
         return StandardResponse.success(
             {
                 "repo_id": repo_id,
                 "status": "ingested",
-                "parsed_files_count": len(parsed_files),
-                "parsed_files": parsed_files
+                # "parsed_files_count": len(parsed_files),
+                # "parsed_files": parsed_files
             },
             message="Repository ingested and parsed successfully."
         )
