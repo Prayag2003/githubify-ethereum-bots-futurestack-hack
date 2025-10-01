@@ -6,6 +6,7 @@ cerebras-cloud-sdk
 pinecone
 tree-sitter==0.20.4
 langchain
+langchain-chroma
 tree_sitter_python
 tree_sitter_javascript
 tree_sitter_typescript
@@ -17,3 +18,5 @@ tree_sitter_rust
 tree_sitter_ruby
 tree_sitter_php
 tree_sitter_swift
+
+langchain_google_genai
