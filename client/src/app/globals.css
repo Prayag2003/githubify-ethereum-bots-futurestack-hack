@@ -1,26 +1,123 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ffffff;
+  --primary: #8b5cf6;
+  --primary-foreground: #ffffff;
+  --secondary: #1a1a1a;
+  --secondary-foreground: #f9fafb;
+  --muted: #1a1a1a;
+  --muted-foreground: #9ca3af;
+  --border: #333333;
+  --input: #1a1a1a;
+  --ring: #8b5cf6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  border-color: var(--border);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--muted);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Typewriter Animation Keyframes */
+@keyframes typewriter {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+
+@keyframes blink-caret {
+  from, to {
+    border-color: transparent;
+  }
+  50% {
+    border-color: #8b5cf6;
+  }
+}
+
+@keyframes fade-out-cursor {
+  0% {
+    border-color: #8b5cf6;
+  }
+  100% {
+    border-color: transparent;
+  }
+}
+
+/* Hero Typewriter Animations */
+.animate-typewriter-hero {
+  overflow: hidden;
+  border-right: 2px solid #8b5cf6;
+  white-space: nowrap;
+  margin: 0 auto;
+  animation: 
+    typewriter 3s steps(30, end),
+    blink-caret 0.75s step-end 4s,
+    fade-out-cursor 0.5s ease-out 4s;
+  animation-delay: 0.5s;
+  animation-fill-mode: both;
+  max-width: fit-content;
+}
+
+.animate-typewriter-hero-2 {
+  overflow: hidden;
+  border-right: 2px solid #8b5cf6;
+  white-space: nowrap;
+  margin: 0 auto;
+  animation: 
+    typewriter 2.5s steps(20, end),
+    blink-caret 0.75s step-end 2.5s,
+    fade-out-cursor 0.5s ease-out 2.5s;
+  animation-delay: 4s;
+  animation-fill-mode: both;
+  max-width: fit-content;
+}
+
+/* Cursor Animation After Typing */
+.animate-typewriter-hero::after,
+.animate-typewriter-hero-2::after {
+  content: '';
+  animation: blink-caret 0.75s step-end infinite;
 }
