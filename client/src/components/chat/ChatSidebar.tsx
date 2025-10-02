@@ -1,6 +1,7 @@
 import { Github, MessageCircle, History, Plus, Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ChatHistory } from "@/types";
+import { formatDateConsistent } from "@/lib/utils";
 
 interface ChatSidebarProps {
   isOpen: boolean;
@@ -150,7 +151,7 @@ export function ChatSidebar({
                   {chat.title}
                 </div>
                 <div className="text-xs text-gray-500 mt-1 font-light">
-                  {chat.lastActivity.toLocaleDateString()}
+                  {formatDateConsistent(chat.lastActivity)}
                 </div>
               </button>
             ))}

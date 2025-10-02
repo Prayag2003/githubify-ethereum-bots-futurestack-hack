@@ -16,3 +16,14 @@ export function extractGitHubInfo(url: string) {
   }
   return null;
 }
+
+/**
+ * Format date consistently for SSR/client hydration
+ * Prevents hydration mismatches by using a fixed format
+ */
+export function formatDateConsistent(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${month}/${day}/${year}`;
+}
