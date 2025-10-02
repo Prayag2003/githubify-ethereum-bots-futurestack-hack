@@ -1,0 +1,54 @@
+{
+  "overall_status": "success",
+  "failed_tests": [],
+  "skipped_tests": [
+    "vector_store",
+    "load_balancing"
+  ],
+  "test_results": {
+    "chunking_methods": {
+      "fixed_chunker": {
+        "status": "success",
+        "chunks": 3,
+        "error": null
+      },
+      "semantic_chunker": {
+        "status": "success",
+        "chunks": 2,
+        "error": null
+      },
+      "ast_chunker": {
+        "status": "success",
+        "chunks": 9,
+        "error": null
+      }
+    },
+    "codebase_processing": {
+      "status": "success",
+      "document_count": 33,
+      "total_chunks": 33,
+      "chunk_breakdown": {
+        "fixed": 6,
+        "semantic": 9,
+        "ast": 18
+      },
+      "error": null
+    },
+    "indexing_tool": {
+      "status": "success",
+      "document_count": 33,
+      "error": null
+    },
+    "vector_store": {
+      "status": "skipped",
+      "reason": "PINECONE_API_KEY not configured",
+      "error": null
+    },
+    "load_balancing": {
+      "status": "skipped",
+      "reason": "PINECONE_API_KEY not configured",
+      "error": null
+    }
+  },
+  "test_repo_path": "/var/folders/d6/qzgsy5mn0rv2795wx6t09kgm0000gr/T/test_repo_4s39ww0c"
+}
