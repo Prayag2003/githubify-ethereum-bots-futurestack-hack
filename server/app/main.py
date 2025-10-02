@@ -1,6 +1,6 @@
 import logging
 from fastapi import FastAPI
-from app.api.routes import repos, query
+from app.api.routes import repos, query, architect
 
 # Configure logging
 logging.basicConfig(
@@ -23,6 +23,7 @@ app = FastAPI(
 # Register routes
 app.include_router(repos.router, prefix="/repos", tags=["Repositories"])
 app.include_router(query.router, prefix="/query", tags=["Queries"])
+app.include_router(architect.router, prefix="/diagram", tags=["Architecture"])
 
 @app.on_event("startup")
 async def startup_event():
