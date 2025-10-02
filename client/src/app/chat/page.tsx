@@ -24,14 +24,18 @@ function ChatContent() {
     currentMessage,
     setCurrentMessage,
     isLoading,
+    currentChatId,
     sendMessage,
     startNewChat,
+    loadChat,
     handleKeyPress,
   } = useChat();
 
   const handleHistoryItemClick = (chatId: string) => {
-    // TODO: Implement chat history loading
-    console.log("Loading chat:", chatId);
+    const chatToLoad = chatHistory.find(chat => chat.id === chatId);
+    if (chatToLoad) {
+      loadChat(chatToLoad);
+    }
   };
 
   return (
@@ -41,8 +45,9 @@ function ChatContent() {
         isOpen={sidebarOpen}
         currentRepo={currentRepo}
         chatHistory={chatHistory}
+        currentChatId={currentChatId}
         onNewChat={startNewChat}
-        onNavigateToVisualize={() => navigateToVisualize(currentRepo)}
+        onNavigateToVisualize={() => navigateToVisualize(currentRepo || "github.com/owner/project")}
         onHistoryItemClick={handleHistoryItemClick}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />

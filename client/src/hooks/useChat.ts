@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { ChatMessage } from "@/types";
+import { ChatMessage, ChatHistory } from "@/types";
 
 /**
  * Custom hook for chat functionality following DRY principle
@@ -9,6 +9,7 @@ export function useChat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -44,6 +45,13 @@ export function useChat() {
   const startNewChat = useCallback(() => {
     setMessages([]);
     setCurrentMessage("");
+    setCurrentChatId(null);
+  }, []);
+
+  const loadChat = useCallback((chatHistory: ChatHistory) => {
+    setMessages(chatHistory.messages);
+    setCurrentMessage("");
+    setCurrentChatId(chatHistory.id);
   }, []);
 
   const handleKeyPress = useCallback(
@@ -61,8 +69,10 @@ export function useChat() {
     currentMessage,
     setCurrentMessage,
     isLoading,
+    currentChatId,
     sendMessage,
     startNewChat,
+    loadChat,
     handleKeyPress,
   };
 }

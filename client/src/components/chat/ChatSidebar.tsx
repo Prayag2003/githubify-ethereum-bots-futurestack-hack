@@ -7,6 +7,7 @@ interface ChatSidebarProps {
   isOpen: boolean;
   currentRepo: string;
   chatHistory: ChatHistory[];
+  currentChatId: string | null;
   onNewChat: () => void;
   onNavigateToVisualize: () => void;
   onHistoryItemClick: (chatId: string) => void;
@@ -21,6 +22,7 @@ export function ChatSidebar({
   isOpen,
   currentRepo,
   chatHistory,
+  currentChatId,
   onNewChat,
   onNavigateToVisualize,
   onHistoryItemClick,
@@ -140,21 +142,32 @@ export function ChatSidebar({
             </span>
           </div>
           <div className="space-y-1 sm:space-y-2">
-            {chatHistory.map((chat) => (
-              <button
-                key={chat.id}
-                onClick={() => onHistoryItemClick(chat.id)}
-                className="w-full text-left p-3 sm:p-4 rounded-xl hover:bg-white/5 transition-all duration-300 group border border-transparent hover:border-white/10"
-                aria-label={`Open chat: ${chat.title}`}
-              >
-                <div className="text-xs sm:text-sm font-medium text-white group-hover:text-purple-300 transition-colors truncate">
-                  {chat.title}
-                </div>
-                <div className="text-xs text-gray-500 mt-1 font-light">
-                  {formatDateConsistent(chat.lastActivity)}
-                </div>
-              </button>
-            ))}
+            {chatHistory.map((chat) => {
+              const isActive = currentChatId === chat.id;
+              return (
+                <button
+                  key={chat.id}
+                  onClick={() => onHistoryItemClick(chat.id)}
+                  className={`w-full text-left p-3 sm:p-4 rounded-xl transition-all duration-300 group border ${
+                    isActive
+                      ? "bg-purple-500/20 border-purple-500/30"
+                      : "border-transparent hover:border-white/10 hover:bg-white/5"
+                  }`}
+                  aria-label={`Open chat: ${chat.title}`}
+                >
+                  <div className={`text-xs sm:text-sm font-medium transition-colors truncate ${
+                    isActive
+                      ? "text-purple-300"
+                      : "text-white group-hover:text-purple-300"
+                  }`}>
+                    {chat.title}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1 font-light">
+                    {formatDateConsistent(chat.lastActivity)}
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
