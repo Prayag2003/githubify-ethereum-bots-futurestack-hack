@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { MessageCircle, TreePine, Grid3X3, Github } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Github } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 
 /**
  * Home page component for the Codebase AI application
