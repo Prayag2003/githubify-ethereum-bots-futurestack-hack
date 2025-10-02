@@ -13,7 +13,7 @@ export function Button({
   size = 'md',
   className,
 }: ButtonProps) {
-  const baseStyles = 'font-medium transition-all duration-300 transform hover:scale-105 backdrop-blur-sm rounded-full'
+  const baseStyles = 'inline-flex items-center justify-center font-medium transition-all duration-300 transform hover:scale-105 backdrop-blur-sm rounded-full'
   
   const variantStyles = {
     primary: 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg hover:shadow-purple-500/30',
