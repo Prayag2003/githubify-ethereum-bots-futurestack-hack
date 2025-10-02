@@ -1,11 +1,15 @@
-import { Github } from 'lucide-react'
-import { HeaderProps } from '@/types'
+import { Github } from "lucide-react";
+import { HeaderProps } from "@/types";
 
 /**
  * Reusable Header component following DRY principle
  * Single responsibility: Handle header rendering and branding
  */
-export function Header({ title, showBeta = false, className = '' }: HeaderProps) {
+export function Header({
+  title,
+  showBeta = false,
+  className = "",
+}: HeaderProps) {
   return (
     <header className={`absolute top-0 left-0 z-10 p-8 ${className}`}>
       <div className="flex items-center gap-3">
@@ -20,5 +24,5 @@ export function Header({ title, showBeta = false, className = '' }: HeaderProps)
         )}
       </div>
     </header>
-  )
+  );
 }
