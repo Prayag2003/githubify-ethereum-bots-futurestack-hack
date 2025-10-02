@@ -1,6 +1,7 @@
 import { MessageCircle, Bot } from "lucide-react";
 import { MessageBubble } from "./MessageBubble";
 import { ChatMessage } from "@/types";
+import { useEffect, useRef } from "react";
 
 interface ChatMessagesProps {
   messages: ChatMessage[];
@@ -12,6 +13,12 @@ interface ChatMessagesProps {
  * Single responsibility: Handle chat messages display and empty state
  */
 export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isLoading]);
   if (messages.length === 0) {
     return (
       <div className="text-center text-gray-400 mt-32">
@@ -47,6 +54,9 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
           </div>
         </div>
       )}
+      
+      {/* Invisible element to scroll to */}
+      <div ref={messagesEndRef} />
     </div>
   );
 }

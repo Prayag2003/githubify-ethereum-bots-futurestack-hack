@@ -32,7 +32,7 @@ export function ChatSidebar({
     return (
       <div className="w-16 sm:w-16 md:w-16 lg:w-16 xl:w-16 bg-white/5 backdrop-blur-sm border-r border-white/10 transition-all duration-300 ease-in-out flex flex-col">
         {/* Collapsed Sidebar - Just Toggle Button */}
-        <div className="p-3 sm:p-4 border-b border-white/10">
+        <div className="p-3 sm:p-4">
           <button
             onClick={onToggleSidebar}
             className="w-full p-2 hover:bg-white/10 rounded-lg transition-all duration-300 flex items-center justify-center"
@@ -85,7 +85,7 @@ export function ChatSidebar({
   return (
     <div className="w-64 sm:w-72 md:w-80 lg:w-80 xl:w-80 bg-white/5 backdrop-blur-sm border-r border-white/10 transition-all duration-300 ease-in-out flex flex-col">
       {/* Sidebar Header with Toggle Button */}
-      <div className="p-4 sm:p-6 border-b border-white/10">
+      <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
