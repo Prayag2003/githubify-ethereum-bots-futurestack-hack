@@ -1,24 +1,24 @@
-'use client'
+"use client";
 
-import { useState, Suspense } from 'react'
-import { Menu, X, Send, MessageCircle } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner'
-import { ChatSidebar } from '@/components/chat/ChatSidebar'
-import { ChatMessages } from '@/components/chat/ChatMessages'
-import { useSearchParamsData } from '@/hooks/useSearchParams'
-import { useNavigation } from '@/hooks/useNavigation'
-import { useChat } from '@/hooks/useChat'
-import { ChatHistory } from '@/types'
-import { mockChatHistory } from '@/services/mockData'
+import { ChatMessages } from "@/components/chat/ChatMessages";
+import { ChatSidebar } from "@/components/chat/ChatSidebar";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useChat } from "@/hooks/useChat";
+import { useNavigation } from "@/hooks/useNavigation";
+import { useSearchParamsData } from "@/hooks/useSearchParams";
+import { mockChatHistory } from "@/services/mockData";
+import { ChatHistory } from "@/types";
+import { Send } from "lucide-react";
+import { Suspense, useState } from "react";
 
 function ChatContent() {
-  const { currentRepo } = useSearchParamsData()
-  const { navigateToVisualize } = useNavigation()
-  const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [chatHistory] = useState<ChatHistory[]>(mockChatHistory)
-  
+  const { currentRepo } = useSearchParamsData();
+  const { navigateToVisualize } = useNavigation();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [chatHistory] = useState<ChatHistory[]>(mockChatHistory);
+
   const {
     messages,
     currentMessage,
@@ -26,13 +26,13 @@ function ChatContent() {
     isLoading,
     sendMessage,
     startNewChat,
-    handleKeyPress
-  } = useChat()
+    handleKeyPress,
+  } = useChat();
 
   const handleHistoryItemClick = (chatId: string) => {
     // TODO: Implement chat history loading
-    console.log('Loading chat:', chatId)
-  }
+    console.log("Loading chat:", chatId);
+  };
 
   return (
     <div className="min-h-screen bg-black text-white flex">
@@ -51,14 +51,11 @@ function ChatContent() {
       <div className="flex-1 flex flex-col">
         {/* Minimalistic Header */}
         <header className="bg-white/5 backdrop-blur-sm border-b border-white/10 p-6 flex items-center gap-4">
-          
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <MessageCircle className="h-5 w-5 text-white" />
-            </div>
-            <span className="text-xl font-light tracking-wide">Codebase AI</span>
+            <span className="text-xl font-light tracking-wide">
+              Codebase AI
+            </span>
           </div>
-          
         </header>
 
         {/* Chat Messages */}
@@ -81,7 +78,9 @@ function ChatContent() {
             <Button
               onClick={() => sendMessage(currentMessage)}
               disabled={!currentMessage.trim() || isLoading}
-              variant={currentMessage.trim() && !isLoading ? 'primary' : 'ghost'}
+              variant={
+                currentMessage.trim() && !isLoading ? "primary" : "ghost"
+              }
               size="sm"
               className="flex-shrink-0"
             >
@@ -91,7 +90,7 @@ function ChatContent() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export default function ChatPage() {
@@ -99,6 +98,5 @@ export default function ChatPage() {
     <Suspense fallback={<LoadingSpinner message="Loading chat..." />}>
       <ChatContent />
     </Suspense>
-  )
+  );
 }
-

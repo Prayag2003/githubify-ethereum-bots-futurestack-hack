@@ -1,4 +1,4 @@
-import { InputProps } from '@/types'
+import { InputProps } from "@/types";
 
 /**
  * Reusable Input component following KISS principle
@@ -9,20 +9,22 @@ export function Input({
   onChange,
   placeholder,
   disabled = false,
-  className = '',
+  className = "",
   onKeyPress,
-  size = 'default',
-}: InputProps & { 
-  onKeyPress?: (e: React.KeyboardEvent) => void
-  size?: 'default' | 'sm' | 'lg'
+  size = "default",
+}: InputProps & {
+  onKeyPress?: (e: React.KeyboardEvent) => void;
+  size?: "default" | "sm" | "lg";
 }) {
   const sizeStyles = {
-    sm: 'px-4 py-2 text-sm',
-    default: 'px-6 py-4 text-lg',
-    lg: 'px-8 py-6 text-xl'
-  }
+    sm: "px-4 py-2 text-sm",
+    default: "px-6 py-4 text-lg",
+    lg: "px-8 py-6 text-xl",
+  };
 
-  const textAlign = className.includes('text-left') ? 'text-left' : 'text-center'
+  const textAlign = className.includes("text-left")
+    ? "text-left"
+    : "text-center";
 
   return (
     <div className={`relative w-full ${className}`}>
@@ -37,5 +39,5 @@ export function Input({
       />
       <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/20 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none"></div>
     </div>
-  )
+  );
 }

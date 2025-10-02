@@ -1,15 +1,15 @@
-import { Github, MessageCircle, History, Plus, Menu, X } from 'lucide-react'
-import { Button } from '@/components/ui/Button'
-import { ChatHistory } from '@/types'
+import { Github, MessageCircle, History, Plus, Menu, X } from "lucide-react";
+import { Button } from "@/components/ui/Button";
+import { ChatHistory } from "@/types";
 
 interface ChatSidebarProps {
-  isOpen: boolean
-  currentRepo: string
-  chatHistory: ChatHistory[]
-  onNewChat: () => void
-  onNavigateToVisualize: () => void
-  onHistoryItemClick: (chatId: string) => void
-  onToggleSidebar: () => void
+  isOpen: boolean;
+  currentRepo: string;
+  chatHistory: ChatHistory[];
+  onNewChat: () => void;
+  onNavigateToVisualize: () => void;
+  onHistoryItemClick: (chatId: string) => void;
+  onToggleSidebar: () => void;
 }
 
 /**
@@ -23,7 +23,7 @@ export function ChatSidebar({
   onNewChat,
   onNavigateToVisualize,
   onHistoryItemClick,
-  onToggleSidebar
+  onToggleSidebar,
 }: ChatSidebarProps) {
   if (!isOpen) {
     return (
@@ -38,7 +38,7 @@ export function ChatSidebar({
             <Menu className="h-5 w-5 text-white" />
           </button>
         </div>
-        
+
         {/* Collapsed Actions */}
         <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
           <button
@@ -58,7 +58,7 @@ export function ChatSidebar({
             <MessageCircle className="h-4 w-4 text-white" />
           </button>
         </div>
-        
+
         {/* Collapsed History */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           <div className="space-y-2">
@@ -76,7 +76,7 @@ export function ChatSidebar({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -98,9 +98,11 @@ export function ChatSidebar({
           </button>
         </div>
         <div className="mt-4 sm:mt-6">
-          <div className="text-xs sm:text-sm text-gray-400 mb-2 sm:mb-3 font-light">Repository</div>
+          <div className="text-xs sm:text-sm text-gray-400 mb-2 sm:mb-3 font-light">
+            Repository
+          </div>
           <div className="text-xs sm:text-sm font-mono bg-white/5 border border-white/10 px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-gray-300 break-all">
-            {currentRepo || 'github.com/owner/project'}
+            {currentRepo || "github.com/owner/project"}
           </div>
         </div>
       </div>
@@ -156,5 +158,5 @@ export function ChatSidebar({
         </div>
       </div>
     </div>
-  )
+  );
 }

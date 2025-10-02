@@ -1,10 +1,10 @@
-import { MessageCircle, Bot } from 'lucide-react'
-import { MessageBubble } from './MessageBubble'
-import { ChatMessage } from '@/types'
+import { MessageCircle, Bot } from "lucide-react";
+import { MessageBubble } from "./MessageBubble";
+import { ChatMessage } from "@/types";
 
 interface ChatMessagesProps {
-  messages: ChatMessage[]
-  isLoading: boolean
+  messages: ChatMessage[];
+  isLoading: boolean;
 }
 
 /**
@@ -18,12 +18,14 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
         <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
           <MessageCircle className="h-8 w-8 text-purple-400" />
         </div>
-        <h3 className="text-2xl font-light mb-3 text-white">Start a conversation</h3>
+        <h3 className="text-2xl font-light mb-3 text-white">
+          Start a conversation
+        </h3>
         <p className="text-lg font-light text-gray-400 max-w-md mx-auto">
           Ask about the codebase, or generate a function...
         </p>
       </div>
-    )
+    );
   }
 
   return (
@@ -31,7 +33,7 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
       {messages.map((message) => (
         <MessageBubble key={message.id} message={message} />
       ))}
-      
+
       {isLoading && (
         <div className="flex gap-4 justify-start">
           <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
@@ -46,5 +48,5 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
         </div>
       )}
     </div>
-  )
+  );
 }
