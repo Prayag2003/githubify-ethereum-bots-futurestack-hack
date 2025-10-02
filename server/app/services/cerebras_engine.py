@@ -9,7 +9,7 @@ class CerebrasLLMClientAsync:
     OpenAI-compatible style interface.
     """
 
-    def __init__(self, default_model: str = "llama-3.1-8b", default_system_prompt: str | None = None):
+    def __init__(self, default_model: str = "llama3.1-70b", default_system_prompt: str | None = None):
         load_dotenv()
         api_key = os.environ.get("CEREBRAS_API_KEY")
         if not api_key:
