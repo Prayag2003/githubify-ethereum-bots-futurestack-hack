@@ -65,7 +65,7 @@ export function ChatSidebar({
         {/* Collapsed History */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           <div className="space-y-2">
-            {chatHistory.slice(0, 5).map((chat) => (
+            {chatHistory.slice(0, 5).map(chat => (
               <button
                 key={chat.id}
                 onClick={() => onHistoryItemClick(chat.id)}
@@ -142,7 +142,7 @@ export function ChatSidebar({
             </span>
           </div>
           <div className="space-y-1 sm:space-y-2">
-            {chatHistory.map((chat) => {
+            {chatHistory.map(chat => {
               const isActive = currentChatId === chat.id;
               return (
                 <button

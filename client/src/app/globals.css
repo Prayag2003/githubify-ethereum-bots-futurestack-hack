@@ -69,7 +69,8 @@ body {
 }
 
 @keyframes blink-caret {
-  from, to {
+  from,
+  to {
     border-color: transparent;
   }
   50% {
@@ -92,7 +93,7 @@ body {
   border-right: 2px solid #8b5cf6;
   white-space: nowrap;
   margin: 0 auto;
-  animation: 
+  animation:
     typewriter 3s steps(30, end),
     blink-caret 0.75s step-end 4s,
     fade-out-cursor 0.5s ease-out 4s;
@@ -106,7 +107,7 @@ body {
   border-right: 2px solid #8b5cf6;
   white-space: nowrap;
   margin: 0 auto;
-  animation: 
+  animation:
     typewriter 2.5s steps(20, end),
     blink-caret 0.75s step-end 2.5s,
     fade-out-cursor 0.5s ease-out 2.5s;
@@ -118,6 +119,6 @@ body {
 /* Cursor Animation After Typing */
 .animate-typewriter-hero::after,
 .animate-typewriter-hero-2::after {
-  content: '';
+  content: "";
   animation: blink-caret 0.75s step-end infinite;
 }

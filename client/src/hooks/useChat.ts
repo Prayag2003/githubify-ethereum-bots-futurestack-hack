@@ -22,7 +22,7 @@ export function useChat() {
         timestamp: new Date(),
       };
 
-      setMessages((prev) => [...prev, userMessage]);
+      setMessages(prev => [...prev, userMessage]);
       setCurrentMessage("");
       setIsLoading(true);
 
@@ -35,7 +35,7 @@ export function useChat() {
             "This is a mock response. In the real application, this would connect to your backend API to get AI-generated responses about the codebase.",
           timestamp: new Date(),
         };
-        setMessages((prev) => [...prev, assistantMessage]);
+        setMessages(prev => [...prev, assistantMessage]);
         setIsLoading(false);
       }, 1500);
     },

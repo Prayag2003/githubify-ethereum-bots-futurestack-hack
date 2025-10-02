@@ -37,7 +37,7 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
 
   return (
     <div className="space-y-6">
-      {messages.map((message) => (
+      {messages.map(message => (
         <MessageBubble key={message.id} message={message} />
       ))}
 

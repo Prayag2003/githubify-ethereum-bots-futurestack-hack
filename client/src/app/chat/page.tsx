@@ -32,7 +32,7 @@ function ChatContent() {
   } = useChat();
 
   const handleHistoryItemClick = (chatId: string) => {
-    const chatToLoad = chatHistory.find((chat) => chat.id === chatId);
+    const chatToLoad = chatHistory.find(chat => chat.id === chatId);
     if (chatToLoad) {
       loadChat(chatToLoad);
     }

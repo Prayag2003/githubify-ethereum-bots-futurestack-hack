@@ -32,7 +32,7 @@ export function Input({
         type="text"
         placeholder={placeholder}
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={e => onChange(e.target.value)}
         onKeyPress={onKeyPress}
         disabled={disabled}
         className={`w-full ${sizeStyles[size]} bg-white/5 border border-white/10 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 focus:bg-white/10 transition-all duration-500 backdrop-blur-sm ${textAlign} font-light`}
