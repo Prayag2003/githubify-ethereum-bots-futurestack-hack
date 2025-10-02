@@ -3,10 +3,8 @@ uvicorn
 requests
 python-dotenv
 cerebras-cloud-sdk
-pinecone
+
 tree-sitter
-langchain
-langchain-chroma
 tree-sitter-python
 tree-sitter-javascript
 tree-sitter-typescript
@@ -18,4 +16,9 @@ tree-sitter-rust
 tree-sitter-ruby
 tree-sitter-php
 tree-sitter-swift
-langchain-google-genai
+
+pinecone
+
+langchain
+langchain-chroma
+sentence-transformers
