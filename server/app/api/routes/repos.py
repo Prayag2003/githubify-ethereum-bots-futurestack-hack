@@ -14,30 +14,40 @@ def ingest_repo(payload: RepoRequest):
     """Clone, parse, embed, and store repository in Pinecone."""
     try:
         # Step 1: Clone repository
-        logger.info(f"Cloning: {payload.github_url}")
+        logger.info("🔗 Cloning repository: %s", payload.github_url)
         repo_id = repo_manager.clone_repo(payload.github_url)
+        logger.info("✅ Repository cloned successfully: %s", repo_id)
         
-        # Step 2: Parse to AST documents
-        logger.info(f"Parsing codebase for {repo_id}")
+        # Step 2: Parse to chunked documents
+        logger.info("📄 Starting codebase parsing for %s", repo_id)
         codebase = load_codebase_as_graph_docs(f"repos/{repo_id}")
         
         if not codebase:
+            logger.warning("❌ No code files found in repository")
             return StandardResponse.error("No code files found", code=400)
         
-        logger.info(f"Found {len(codebase)} files")
+        logger.info("📦 Found %d document chunks ready for processing", len(codebase))
         
         # Step 3: Create embeddings and store in Pinecone
-        logger.info("Creating embeddings with CodeBERT...")
+        logger.info("🔮 Starting vector storage process...")
         vector_store = PineconeVectorStore(repo_id)
         result = vector_store.add_documents(codebase)
         
         if not result.get("success"):
+            logger.error("❌ Vector storage failed: %s", result.get('error'))
             return StandardResponse.error(
                 f"Failed to store: {result.get('error')}",
                 code=500
             )
         
         # Success
+        logger.info("🎉 REPOSITORY INGESTION COMPLETE!")
+        logger.info("📊 FINAL RESULTS:")
+        logger.info("  🆔 Repository ID: %s", repo_id)
+        logger.info("  📦 Vectors stored: %d", result["count"])
+        logger.info("  🗂️  Index name: %s", result["index_name"])
+        logger.info("  🏷️  Namespace: %s", result.get("namespace", "default"))
+        
         return StandardResponse.success(
             {
                 "repo_id": repo_id,
@@ -45,7 +55,7 @@ def ingest_repo(payload: RepoRequest):
                 "files_processed": result["count"],
                 "index_name": result["index_name"]
             },
-            message=f"Successfully ingested {result['count']} files"
+            message=f"Successfully ingested {result['count']} document chunks"
         )
         
     except Exception as e:

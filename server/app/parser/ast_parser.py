@@ -1,23 +1,15 @@
 import os
-import json
-from tree_sitter import Language, Parser
-import tree_sitter_python as ts_python
-import tree_sitter_javascript as ts_javascript
-import tree_sitter_typescript as ts_typescript
-import tree_sitter_java as ts_java
-import tree_sitter_go as ts_go
-import tree_sitter_c as ts_c
-import tree_sitter_cpp as ts_cpp
-import tree_sitter_rust as ts_rust
-import tree_sitter_ruby as ts_ruby
-import tree_sitter_php as ts_php
-import tree_sitter_swift as ts_swift
-from typing import List, Dict
+import logging
+from typing import List
 
 from langchain.docstore.document import Document
-from langchain.embeddings.base import Embeddings
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain_chroma import Chroma
+
+# Import tools from tools directory
+from .tools.indexing_tool import index_repository
+from .tools.chunking import FixedSizeChunker, SemanticChunker
+from .tools.ast_chunker import ASTChunker
+
+logger = logging.getLogger(__name__)
 
 # from config import (
 #     PERSISTENT_CODEGRAPH_VECTORSTORE_PATH,
@@ -26,102 +18,137 @@ from langchain_chroma import Chroma
 #     CODEBASE_PATH,
 # )
 
-# Map file extensions to language names
-EXT_TO_LANG = {
-    "py": "python",
-    "js": "javascript",
-    "jsx": "javascript",  # JSX uses JavaScript parser
-    "ts": "typescript",
-    "tsx": "typescript",  # TSX uses TypeScript parser
-    "java": "java",
-    "go": "go",
-    "c": "c",
-    "cpp": "cpp",
-    "cc": "cpp",
-    "cxx": "cpp",
-    "rs": "rust",
-    "rb": "ruby",
-    "php": "php",
-    "swift": "swift",
-}
+# =============================================================================
+# OLD TREE-SITTER IMPLEMENTATION - COMMENTED OUT
+# =============================================================================
 
-# Map language names to their tree-sitter modules
-LANG_MODULES = {
-    "python": ts_python,
-    "javascript": ts_javascript,
-    "typescript": ts_typescript,
-    "java": ts_java,
-    "go": ts_go,
-    "c": ts_c,
-    "cpp": ts_cpp,
-    "rust": ts_rust,
-    "ruby": ts_ruby,
-    "php": ts_php,
-    "swift": ts_swift,
-}
+# # Map file extensions to language names
+# EXT_TO_LANG = {
+#     "py": "python",
+#     "js": "javascript",
+#     "jsx": "javascript",  # JSX uses JavaScript parser
+#     "ts": "typescript",
+#     "tsx": "typescript",  # TSX uses TypeScript parser
+#     "java": "java",
+#     "go": "go",
+#     "c": "c",
+#     "cpp": "cpp",
+#     "cc": "cpp",
+#     "cxx": "cpp",
+#     "rs": "rust",
+#     "rb": "ruby",
+#     "php": "php",
+#     "swift": "swift",
+# }
 
-# Cache of loaded Language objects
-LANGUAGES: Dict[str, Language] = {}
+# # Map language names to their tree-sitter modules
+# LANG_MODULES = {
+#     "python": ts_python,
+#     "javascript": ts_javascript,
+#     "typescript": ts_typescript,
+#     "java": ts_java,
+#     "go": ts_go,
+#     "c": ts_c,
+#     "cpp": ts_cpp,
+#     "rust": ts_rust,
+#     "ruby": ts_ruby,
+#     "php": ts_php,
+#     "swift": ts_swift,
+# }
 
-from tree_sitter import Language, Parser
+# # Cache of loaded Language objects
+# LANGUAGES: Dict[str, Language] = {}
 
-# Cache of loaded Language objects
-LANGUAGES: Dict[str, Language] = {}
+# from tree_sitter import Language, Parser
 
-def get_language(ext: str) -> Language:
-    """Get or create a Language object for the given file extension."""
-    lang_name = EXT_TO_LANG.get(ext)
-    if not lang_name:
-        raise ValueError(f"No grammar for .{ext}")
+# # Cache of loaded Language objects
+# LANGUAGES: Dict[str, Language] = {}
 
-    module = LANG_MODULES.get(lang_name)
-    if not module:
-        raise ValueError(f"Module for {lang_name!r} not available")
+# def get_language(ext: str) -> Language:
+#     """Get or create a Language object for the given file extension."""
+#     lang_name = EXT_TO_LANG.get(ext)
+#     if not lang_name:
+#         raise ValueError(f"No grammar for .{ext}")
 
-    if ext not in LANGUAGES:
-        try:
-            # In the latest tree-sitter, Language() takes only the PyCapsule
-            LANGUAGES[ext] = Language(module.language())
-        except Exception as e:
-            raise ValueError(f"Failed to load language {lang_name}: {e}")
-    return LANGUAGES[ext]
+#     module = LANG_MODULES.get(lang_name)
+#     if not module:
+#         raise ValueError(f"Module for {lang_name!r} not available")
 
-
-def build_graph(code: str, lang: Language) -> Dict:
-    """Build AST graph from code using tree-sitter."""
-    try:
-        # Pass language to Parser constructor
-        parser = Parser(lang)
-        tree = parser.parse(code.encode("utf8"))
-        nodes, edges = [], []
-
-        def visit(n, parent_id=None):
-            nid = len(nodes)
-            nodes.append({
-                "id": nid,
-                "type": n.type,
-                "start": n.start_point,
-                "end": n.end_point,
-                "text": code[n.start_byte:n.end_byte] if n.start_byte < len(code.encode('utf8')) else ""
-            })
-            if parent_id is not None:
-                edges.append({"from": parent_id, "to": nid})
-            for c in n.children:
-                visit(c, nid)
-
-        visit(tree.root_node)
-        return {"nodes": nodes, "edges": edges}
-    except Exception as e:
-        print(f"Error building graph: {e}")
-        import traceback
-        traceback.print_exc()
-        return {"nodes": [{"id": 0, "type": "error", "start": [0, 0], "end": [0, 0], "text": ""}], "edges": []}
+#     if ext not in LANGUAGES:
+#         try:
+#             # In the latest tree-sitter, Language() takes only the PyCapsule
+#             LANGUAGES[ext] = Language(module.language())
+#         except Exception as e:
+#             raise ValueError(f"Failed to load language {lang_name}: {e}")
+#     return LANGUAGES[ext]
 
 
-def load_codebase_as_graph_docs(repo_root) -> List[Document]:
-    """Load codebase files and convert to graph documents."""
+# def build_graph(code: str, lang: Language) -> Dict:
+#     """Build AST graph from code using tree-sitter."""
+#     try:
+#         # Pass language to Parser constructor
+#         parser = Parser(lang)
+#         tree = parser.parse(code.encode("utf8"))
+#         nodes, edges = [], []
+
+#         def visit(n, parent_id=None):
+#             nid = len(nodes)
+#             nodes.append({
+#                 "id": nid,
+#                 "type": n.type,
+#                 "start": n.start_point,
+#                 "end": n.end_point,
+#                 "text": code[n.start_byte:n.end_byte] if n.start_byte < len(code.encode('utf8')) else ""
+#             })
+#             if parent_id is not None:
+#                 edges.append({"from": parent_id, "to": nid})
+#             for c in n.children:
+#                 visit(c, nid)
+
+#         visit(tree.root_node)
+#         return {"nodes": nodes, "edges": edges}
+#     except Exception as e:
+#         print(f"Error building graph: {e}")
+#         import traceback
+#         traceback.print_exc()
+#         return {"nodes": [{"id": 0, "type": "error", "start": [0, 0], "end": [0, 0], "text": ""}], "edges": []}
+
+
+# =============================================================================
+# NEW TOOL-BASED IMPLEMENTATION
+# =============================================================================
+
+def load_codebase_as_chunked_docs(repo_root: str) -> List[Document]:
+    """
+    Load codebase files and convert to chunked documents using the tools.
+    This replaces the old AST-based approach with semantic and fixed-size chunking.
+    
+    Args:
+        repo_root: Path to the repository root
+        
+    Returns:
+        List of Document objects with chunked content
+    """
+    logger.info("🚀 Starting codebase processing from: %s", repo_root)
+    logger.info("🔧 Logging test - this should be visible!")
+    
+    if not os.path.exists(repo_root):
+        logger.error("❌ Repository path does not exist: %s", repo_root)
+        return []
+    
     docs: List[Document] = []
-    print(f"Scanning codebase from: {repo_root}")
+    fixed_chunker = FixedSizeChunker(chunk_size=1000, overlap=200)
+    semantic_chunker = SemanticChunker()
+    ast_chunker = ASTChunker()
+    
+    # Initialize statistics
+    total_files = 0
+    processed_files = 0
+    skipped_files = 0
+    total_fixed_chunks = 0
+    total_semantic_chunks = 0
+    total_ast_chunks = 0
+    total_chunks = 0
     
     # Directories to skip
     skip_dirs = {
@@ -135,70 +162,186 @@ def load_codebase_as_graph_docs(repo_root) -> List[Document]:
     skip_files = {
         '.gitignore', '.env', '.env.local', '.env.development',
         '.env.production', 'package-lock.json', 'yarn.lock',
-        'poetry.lock'
+        'poetry.lock', 'Pipfile.lock', 'yarn-error.log'
     }
     
-    file_count = 0
+    # Supported file extensions (from indexing_tool.py)
+    supported_extensions = {
+        '.py', '.js', '.jsx', '.ts', '.tsx', '.java', '.cpp', '.c', '.h', '.hpp',
+        '.cs', '.go', '.rs', '.rb', '.php', '.swift', '.kt', '.scala', '.r',
+        '.md', '.txt', '.json', '.yaml', '.yml', '.xml', '.html', '.css', '.scss',
+        '.sql', '.sh', '.bash', '.zsh', '.ps1', '.dockerfile', '.tf', '.hcl',
+        '.proto', '.graphql', '.vue', '.svelte', '.astro'
+    }
+    
     for root, dirs, files in os.walk(repo_root):
         # Skip certain directories
         dirs[:] = [d for d in dirs if d not in skip_dirs and not d.startswith('.')]
         
-        for fn in files:
+        for filename in files:
+            total_files += 1
+            
             # Skip hidden files and certain file types
-            if fn.startswith('.') or fn in skip_files:
+            if filename.startswith('.') or filename in skip_files:
+                logger.debug("⏭️  Skipping hidden/system file: %s", filename)
+                skipped_files += 1
                 continue
             
-            parts = fn.rsplit(".", 1)
-            if len(parts) != 2:
-                continue
-            ext = parts[1].lower()
+            file_path = os.path.join(root, filename)
+            relative_path = os.path.relpath(file_path, repo_root)
+            
+            # Get file extension
+            _, ext = os.path.splitext(filename)
             
             # Skip if extension not supported
-            if ext not in EXT_TO_LANG:
+            if ext.lower() not in supported_extensions:
+                logger.debug("⏭️  Skipping unsupported file type: %s (%s)", filename, ext)
+                skipped_files += 1
                 continue
-                
-            full_path = os.path.join(root, fn)
             
             try:
-                lang = get_language(ext)
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
                 
-                with open(full_path, 'r', encoding="utf8", errors='ignore') as f:
-                    src = f.read()
-                
-                # Skip empty files or very small files
-                if not src.strip() or len(src) < 10:
+                # Skip empty files
+                if not content.strip():
+                    logger.debug("⏭️  Skipping empty file: %s", relative_path)
+                    skipped_files += 1
                     continue
                 
-                # Skip very large files (>100KB)
-                if len(src) > 100000:
-                    print(f"Skipping large file: {fn} ({len(src)} bytes)")
-                    continue
-                    
-                graph = build_graph(src, lang)
-                
-                # Skip if graph couldn't be built properly
-                if not graph.get("nodes") or len(graph["nodes"]) < 2:
+                # Skip very large files (>500KB)
+                if len(content) > 500000:
+                    logger.warning("⏭️  Skipping large file: %s (%d bytes)", relative_path, len(content))
+                    skipped_files += 1
                     continue
                 
-                metadata = {
-                    "filename": os.path.relpath(full_path, repo_root),
-                    "language": ext,
-                    "full_code": src,
-                    "file_size": len(src),
-                    "node_count": len(graph["nodes"])
+                # Create base metadata (matching old format for compatibility)
+                base_metadata = {
+                    "filename": relative_path,
+                    "language": ext.lstrip('.'),  # Remove dot for language field
+                    "file_extension": ext,
+                    "file_size": len(content),
+                    "full_code": content,  # Store full code for vector store compatibility
+                    "repo_root": repo_root
                 }
                 
-                docs.append(Document(page_content=json.dumps(graph), metadata=metadata))
-                file_count += 1
-                print(f"Processed: {metadata['filename']} ({metadata['language']}, {metadata['node_count']} nodes)")
+                logger.info("📄 Processing file: %s (%s, %d bytes)", relative_path, ext, len(content))
                 
+                # FIXED-SIZE CHUNKING
+                logger.info("  🔧 Creating fixed-size chunks for %s", relative_path)
+                fixed_chunks = fixed_chunker.chunk(content)
+                for i, chunk in enumerate(fixed_chunks):
+                    chunk_metadata = {
+                        **base_metadata,
+                        'chunk_type': 'fixed',
+                        'chunk_index': i,
+                        'total_chunks': len(fixed_chunks),
+                        'chunk_size': len(chunk)
+                    }
+                    docs.append(Document(page_content=chunk, metadata=chunk_metadata))
+                    total_fixed_chunks += 1
+                
+                # SEMANTIC CHUNKING
+                logger.info("  🧠 Creating semantic chunks for %s", relative_path)
+                # semantic_chunks = semantic_chunker.chunk(content, ext)
+                # for i, chunk in enumerate(semantic_chunks):
+                #     chunk_metadata = {
+                #         **base_metadata,
+                #         'chunk_type': 'semantic',
+                #         'chunk_index': i,
+                #         'total_chunks': len(semantic_chunks),
+                #         'chunk_size': len(chunk)
+                #     }
+                #     docs.append(Document(page_content=chunk, metadata=chunk_metadata))
+                #     total_semantic_chunks += 1
+                
+                # AST CHUNKING
+                # logger.info("  🌳 Creating AST chunks for %s", relative_path)
+                # ast_chunks = ast_chunker.chunk(content, ext)
+                # for i, chunk in enumerate(ast_chunks):
+                #     chunk_metadata = {
+                #         **base_metadata,
+                #         'chunk_type': 'ast',
+                #         'chunk_index': i,
+                #         'total_chunks': len(ast_chunks),
+                #         'chunk_size': len(chunk)
+                #     }
+                #     docs.append(Document(page_content=chunk, metadata=chunk_metadata))
+                #     total_ast_chunks += 1
+                semantic_chunks = []
+                ast_chunks = []
+                
+                # Calculate file totals
+                file_fixed = len(fixed_chunks)
+                file_semantic = len(semantic_chunks)
+                file_ast = len(ast_chunks)
+                file_total = file_fixed + file_semantic + file_ast
+                total_chunks += file_total
+                processed_files += 1
+                
+                logger.info("✅ Processed: %s | Fixed: %d | Semantic: %d | AST: %d | Total: %d", 
+                           relative_path, file_fixed, file_semantic, file_ast, file_total)
+                
+            except (OSError, IOError, UnicodeDecodeError) as e:
+                logger.error("❌ Error processing %s: %s", relative_path, e)
+                skipped_files += 1
+                continue
             except Exception as e:
-                print(f"Error processing {fn}: {e}")
+                logger.error("❌ Unexpected error processing %s: %s", relative_path, e)
+                skipped_files += 1
                 continue
 
-    print(f"Successfully processed {file_count} code files")
+    # Final summary
+    logger.info("🎉 PROCESSING COMPLETE!")
+    logger.info("📊 SUMMARY STATISTICS:")
+    logger.info("  📁 Total files found: %d", total_files)
+    logger.info("  ✅ Files processed: %d", processed_files)
+    logger.info("  ⏭️  Files skipped: %d", skipped_files)
+    logger.info("  🔧 Fixed-size chunks: %d", total_fixed_chunks)
+    logger.info("  🧠 Semantic chunks: %d", total_semantic_chunks)
+    logger.info("  🌳 AST chunks: %d", total_ast_chunks)
+    logger.info("  📦 Total chunks created: %d", total_chunks)
+    logger.info("  📈 Average chunks per file: %.2f", total_chunks / processed_files if processed_files > 0 else 0)
+    
     return docs
 
+
+def index_repository_with_tools(repo_path: str) -> List[Document]:
+    """
+    Index a repository using the indexing tool.
+    This is a wrapper around the indexing_tool.index_repository function.
+    
+    Args:
+        repo_path: Path to the repository to index
+        
+    Returns:
+        List of Document objects ready for vector storage
+    """
+    try:
+        logger.info("Starting repository indexing: %s", repo_path)
+        docs = index_repository(repo_path)
+        logger.info("Indexing completed. Created %d documents", len(docs))
+        return docs
+    except Exception as e:
+        logger.error("Error indexing repository: %s", e)
+        raise
+
+
+# =============================================================================
+# BACKWARD COMPATIBILITY - Keep old function name but use new implementation
+# =============================================================================
+
+def load_codebase_as_graph_docs(repo_root: str) -> List[Document]:
+    """
+    Backward compatibility wrapper for load_codebase_as_chunked_docs.
+    This maintains the same interface but uses the new chunking approach.
+    """
+    return load_codebase_as_chunked_docs(repo_root)
+
+
+# =============================================================================
+# OLD CODEGRAPH ENHANCEMENT LOOP - COMMENTED OUT
+# =============================================================================
 
 # class CodeGraphEnhancementLoop:
 #     def __init__(
@@ -281,89 +424,89 @@ def load_codebase_as_graph_docs(repo_root) -> List[Document]:
 #         print("Vectorstore created successfully")
 
 #     def run(self, query: str) -> str:
-        # """Run the enhancement loop with the given query."""
-        # try:
-        #     print(f"[CodeGraph] Running query: {query}")
+#         """Run the enhancement loop with the given query."""
+#         try:
+#             print(f"[CodeGraph] Running query: {query}")
             
-        #     # Check if vectorstore is available
-        #     if not hasattr(self, 'vs') or self.vs is None:
-        #         return json.dumps({"error": "Vectorstore not initialized"})
+#             # Check if vectorstore is available
+#             if not hasattr(self, 'vs') or self.vs is None:
+#                 return json.dumps({"error": "Vectorstore not initialized"})
             
-        #     # 1) embed & retrieve
-        #     hits = self.vs.similarity_search_with_score(query=query, k=TOP_K)
-        #     print(f"[CodeGraph] Found {len(hits)} initial hits")
+#             # 1) embed & retrieve
+#             hits = self.vs.similarity_search_with_score(query=query, k=TOP_K)
+#             print(f"[CodeGraph] Found {len(hits)} initial hits")
             
-        #     if not hits:
-        #         return json.dumps({"error": "No documents found in vectorstore"})
+#             if not hits:
+#                 return json.dumps({"error": "No documents found in vectorstore"})
             
-        #     # Apply threshold filter
-        #     filtered = [(d, s) for d, s in hits if s >= VECTOR_SEARCH_THRESHOLD]
-        #     print(f"[CodeGraph] {len(filtered)} hits passed threshold {VECTOR_SEARCH_THRESHOLD}")
+#             # Apply threshold filter
+#             filtered = [(d, s) for d, s in hits if s >= VECTOR_SEARCH_THRESHOLD]
+#             print(f"[CodeGraph] {len(filtered)} hits passed threshold {VECTOR_SEARCH_THRESHOLD}")
             
-        #     if not filtered:
-        #         # Lower threshold and try again
-        #         lower_threshold = VECTOR_SEARCH_THRESHOLD * 0.5
-        #         filtered = [(d, s) for d, s in hits if s >= lower_threshold]
-        #         print(f"[CodeGraph] {len(filtered)} hits passed lower threshold {lower_threshold}")
+#             if not filtered:
+#                 # Lower threshold and try again
+#                 lower_threshold = VECTOR_SEARCH_THRESHOLD * 0.5
+#                 filtered = [(d, s) for d, s in hits if s >= lower_threshold]
+#                 print(f"[CodeGraph] {len(filtered)} hits passed lower threshold {lower_threshold}")
                 
-        #         if not filtered:
-        #             return json.dumps({"error": f"No code-graph docs passed threshold {VECTOR_SEARCH_THRESHOLD}"})
+#                 if not filtered:
+#                     return json.dumps({"error": f"No code-graph docs passed threshold {VECTOR_SEARCH_THRESHOLD}"})
             
-        #     top_docs = [d for d, _ in filtered]
+#             top_docs = [d for d, _ in filtered]
 
-        #     # 2) build prompt
-        #     parts = ["### Code-Graph Analysis Context"]
-        #     for i, doc in enumerate(top_docs, 1):
-        #         m = doc.metadata
+#             # 2) build prompt
+#             parts = ["### Code-Graph Analysis Context"]
+#             for i, doc in enumerate(top_docs, 1):
+#                 m = doc.metadata
                 
-        #         # Skip dummy documents
-        #         if m.get('filename') == 'dummy.py':
-        #             continue
+#                 # Skip dummy documents
+#                 if m.get('filename') == 'dummy.py':
+#                     continue
                     
-        #         parts += [
-        #             f"**File {i}:** `{m['filename']}` ({m.get('language', 'unknown')})",
-        #             f"- **File Size:** {m.get('file_size', 0)} bytes",
-        #             f"- **AST Nodes:** {m.get('node_count', 0)}",
-        #             "- **AST Graph (JSON)**:",
-        #             "```json",
-        #             doc.page_content[:2000] + "..." if len(doc.page_content) > 2000 else doc.page_content,
-        #             "```",
-        #             "- **Source Code**:",
-        #             f"```{m.get('language', 'text')}",
-        #             m.get("full_code", "")[:3000] + "..." if len(m.get("full_code", "")) > 3000 else m.get("full_code", ""),
-        #             "```",
-        #             ""
-        #         ]
+#                 parts += [
+#                     f"**File {i}:** `{m['filename']}` ({m.get('language', 'unknown')})",
+#                     f"- **File Size:** {m.get('file_size', 0)} bytes",
+#                     f"- **AST Nodes:** {m.get('node_count', 0)}",
+#                     "- **AST Graph (JSON)**:",
+#                     "```json",
+#                     doc.page_content[:2000] + "..." if len(doc.page_content) > 2000 else doc.page_content,
+#                     "```",
+#                     "- **Source Code**:",
+#                     f"```{m.get('language', 'text')}",
+#                     m.get("full_code", "")[:3000] + "..." if len(m.get("full_code", "")) > 3000 else m.get("full_code", ""),
+#                     "```",
+#                     ""
+#                 ]
 
-        #     parts.append(
-        #         f"### User Query:\n{query}\n\n"
-        #         "Based on the code analysis above, provide a comprehensive solution. "
-        #         "Return **exactly one** JSON object with the following structure:\n"
-        #         "```json\n"
-        #         "{\n"
-        #         '  "filename": "path/to/file.ext",\n'
-        #         '  "changes": "Complete fixed code or specific changes needed",\n'
-        #         '  "explanation": "Detailed explanation of the issue and solution"\n'
-        #         "}\n"
-        #         "```\n"
-        #         "Make sure the JSON is valid and properly formatted."
-        #     )
+#             parts.append(
+#                 f"### User Query:\n{query}\n\n"
+#                 "Based on the code analysis above, provide a comprehensive solution. "
+#                 "Return **exactly one** JSON object with the following structure:\n"
+#                 "```json\n"
+#                 "{\n"
+#                 '  "filename": "path/to/file.ext",\n'
+#                 '  "changes": "Complete fixed code or specific changes needed",\n'
+#                 '  "explanation": "Detailed explanation of the issue and solution"\n'
+#                 "}\n"
+#                 "```\n"
+#                 "Make sure the JSON is valid and properly formatted."
+#             )
             
-        #     prompt = "\n".join(parts)
+#             prompt = "\n".join(parts)
             
-        #     # Limit prompt size
-        #     if len(prompt) > 8000:
-        #         prompt = prompt[:8000] + "\n\n[Content truncated due to length]"
+#             # Limit prompt size
+#             if len(prompt) > 8000:
+#                 prompt = prompt[:8000] + "\n\n[Content truncated due to length]"
             
-        #     print(f"[CodeGraph] Sending prompt to LLM (length: {len(prompt)})")
-        #     resp = self.llm.invoke(prompt)
-        #     result = getattr(resp, "content", str(resp))
+#             print(f"[CodeGraph] Sending prompt to LLM (length: {len(prompt)})")
+#             resp = self.llm.invoke(prompt)
+#             result = getattr(resp, "content", str(resp))
             
-        #     print(f"[CodeGraph] LLM response length: {len(result)}")
-        #     return result
+#             print(f"[CodeGraph] LLM response length: {len(result)}")
+#             return result
             
-        # except Exception as e:
-        #     print(f"[CodeGraph] Error in run(): {e}")
-        #     import traceback
-        #     traceback.print_exc()
-        #     return json.dumps({"error": f"Internal error: {str(e)}"})
+#         except Exception as e:
+#             print(f"[CodeGraph] Error in run(): {e}")
+#             import traceback
+#             traceback.print_exc()
+#             return json.dumps({"error": f"Internal error: {str(e)}"})
