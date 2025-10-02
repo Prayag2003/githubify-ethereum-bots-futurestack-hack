@@ -54,7 +54,7 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
           </div>
         </div>
       )}
-      
+
       {/* Invisible element to scroll to */}
       <div ref={messagesEndRef} />
     </div>

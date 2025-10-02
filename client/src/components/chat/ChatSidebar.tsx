@@ -155,11 +155,13 @@ export function ChatSidebar({
                   }`}
                   aria-label={`Open chat: ${chat.title}`}
                 >
-                  <div className={`text-xs sm:text-sm font-medium transition-colors truncate ${
-                    isActive
-                      ? "text-purple-300"
-                      : "text-white group-hover:text-purple-300"
-                  }`}>
+                  <div
+                    className={`text-xs sm:text-sm font-medium transition-colors truncate ${
+                      isActive
+                        ? "text-purple-300"
+                        : "text-white group-hover:text-purple-300"
+                    }`}
+                  >
                     {chat.title}
                   </div>
                   <div className="text-xs text-gray-500 mt-1 font-light">

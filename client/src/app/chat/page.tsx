@@ -32,7 +32,7 @@ function ChatContent() {
   } = useChat();
 
   const handleHistoryItemClick = (chatId: string) => {
-    const chatToLoad = chatHistory.find(chat => chat.id === chatId);
+    const chatToLoad = chatHistory.find((chat) => chat.id === chatId);
     if (chatToLoad) {
       loadChat(chatToLoad);
     }
@@ -47,7 +47,9 @@ function ChatContent() {
         chatHistory={chatHistory}
         currentChatId={currentChatId}
         onNewChat={startNewChat}
-        onNavigateToVisualize={() => navigateToVisualize(currentRepo || "github.com/owner/project")}
+        onNavigateToVisualize={() =>
+          navigateToVisualize(currentRepo || "github.com/owner/project")
+        }
         onHistoryItemClick={handleHistoryItemClick}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />
