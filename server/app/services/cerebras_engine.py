@@ -1,4 +1,3 @@
-# server/app/services/cerebras_engine.py
 import os
 from dotenv import load_dotenv
 from cerebras.cloud.sdk import AsyncCerebras
@@ -49,3 +48,41 @@ class CerebrasLLMClientAsync:
         """
         messages = [{"role": "user", "content": prompt}]
         return await self.chat(messages, model=model, system_prompt=system_prompt)
+
+    async def stream_completion(
+        self,
+        prompt: str,
+        model: str | None = None,
+        system_prompt: str | None = None,
+        socket_id: str | None = None,
+        sio=None
+    ):
+        """
+        Stream a completion using Cerebras and optionally send via Socket.IO.
+        """
+        print("SIO: ", sio)
+        messages = [{"role": "user", "content": prompt}]
+        if system_prompt:
+            messages.insert(0, {"role": "system", "content": system_prompt})
+
+        # Create async generator with stream=True
+        stream = await self.client.chat.completions.create(
+            messages=messages,
+            model=model or self.default_model,
+            stream=True  # streaming mode
+        )
+
+        full_text = ""
+        async for chunk in stream:  # async iteration
+            delta = chunk.choices[0].delta.content or ""
+            full_text += delta
+
+            # If Socket.IO is provided, emit incrementally
+            if socket_id and sio:
+                await sio.emit("query_chunk", {"text": delta}, to=socket_id)
+
+        # Send final completion event
+        if socket_id and sio:
+            await sio.emit("query_complete", {"text": full_text}, to=socket_id)
+
+        return full_text
