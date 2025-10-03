@@ -23,3 +23,7 @@ langchain
 langchain-chroma
 sentence-transformers
 langchain_google_genai
+
+# Socket.IO for async with FastAPI
+python-socketio>=5.7.0
+aiohttp

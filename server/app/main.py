@@ -1,6 +1,7 @@
 import logging
 from fastapi import FastAPI
 from app.api.routes import repos, query, architect, tree
+from app.services import socket_server
 
 # Configure logging
 logging.basicConfig(
@@ -25,6 +26,8 @@ app.include_router(repos.router, prefix="/repos", tags=["Repositories"])
 app.include_router(query.router, prefix="/query", tags=["Queries"])
 app.include_router(architect.router, prefix="/diagram", tags=["Architecture"])
 app.include_router(tree.router, prefix="/tree", tags=["Architecture"])
+
+app.mount("/socket.io", socket_server.socket_app)
 
 @app.on_event("startup")
 async def startup_event():
