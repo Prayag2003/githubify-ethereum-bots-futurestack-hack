@@ -15,6 +15,14 @@ interface StreamingState {
   socketId: string | null;
 }
 
+// Global socket instance to prevent multiple connections
+let globalSocket: Socket | null = null;
+let globalSocketServerUrl: string | null = null;
+let globalSocketListeners: Set<string> = new Set();
+
+// Global message tracking to prevent duplicates across hook instances
+let globalActiveMessageId: string | null = null;
+
 /**
  * Custom hook for streaming chat functionality using Socket.IO
  * Handles real-time communication with the AI model via WebSocket
@@ -26,11 +34,6 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
     mode = "fast",
   } = options;
 
-  console.log("🔧 useStreamingChat initialized with:", {
-    serverUrl,
-    repoId,
-    mode,
-  });
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState("");
@@ -45,11 +48,43 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
   const socketRef = useRef<Socket | null>(null);
   const currentAssistantMessageIdRef = useRef<string | null>(null);
   const streamingContentRef = useRef<string>("");
+  const isInitializedRef = useRef<boolean>(false);
+  const lastMessageRef = useRef<string>("");
+  const lastMessageTimeRef = useRef<number>(0);
 
   useEffect(() => {
-    if (!socketRef.current) {
-      console.log("🔌 Initializing socket connection to:", serverUrl);
-      socketRef.current = io(serverUrl, {
+    // Prevent multiple initializations
+    if (isInitializedRef.current) {
+      return;
+    }
+
+    // Use global socket if it exists and matches the server URL
+    if (globalSocket && globalSocketServerUrl === serverUrl && globalSocket.connected) {
+      console.log("🔌 Reusing existing global socket connection");
+      socketRef.current = globalSocket;
+      setStreamingState(prev => ({
+        ...prev,
+        isConnected: true,
+        socketId: globalSocket?.id || null,
+      }));
+      isInitializedRef.current = true;
+      return;
+    }
+
+    // Clean up existing global socket if server URL changed
+    if (globalSocket && globalSocketServerUrl !== serverUrl) {
+      console.log("🔌 Server URL changed, cleaning up old socket");
+      globalSocket.removeAllListeners();
+      globalSocket.disconnect();
+      globalSocket = null;
+      globalSocketServerUrl = null;
+      globalSocketListeners.clear();
+    }
+
+    // Create new socket connection
+    if (!globalSocket) {
+      console.log("🔌 Initializing new global socket connection to:", serverUrl);
+      globalSocket = io(serverUrl, {
         path: "/socket.io",
         transports: ["websocket", "polling"],
         autoConnect: true,
@@ -57,37 +92,75 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         reconnectionAttempts: 5,
         reconnectionDelay: 1000,
       });
+      globalSocketServerUrl = serverUrl;
+      socketRef.current = globalSocket;
+    }
 
-      const socket = socketRef.current;
+    const socket = socketRef.current;
+    if (!socket) return;
 
-      // Connection events
-      socket.on("connect", () => {
-        console.log("✅ Connected to server with socket ID:", socket.id);
-        setStreamingState(prev => ({
-          ...prev,
-          isConnected: true,
-          socketId: socket.id || null,
-        }));
-      });
+    // Helper function to add event listener only once
+    const addListenerOnce = (event: string, handler: (...args: any[]) => void) => {
+      if (!globalSocketListeners.has(event)) {
+        socket.on(event, handler);
+        globalSocketListeners.add(event);
+      }
+    };
 
-      socket.on("disconnect", () => {
-        console.log("❌ Disconnected from server");
-        setStreamingState(prev => ({
-          ...prev,
-          isConnected: false,
-          socketId: null,
-        }));
-      });
+    // Connection events
+    addListenerOnce("connect", () => {
+      setStreamingState(prev => ({
+        ...prev,
+        isConnected: true,
+        socketId: socket.id || null,
+      }));
+    });
 
-      // Streaming events - direct approach
-      socket.on("query_chunk", (data: { text: string }) => {
-        console.log("📝 Received query chunk:", data.text);
+    addListenerOnce("disconnect", () => {
+      setStreamingState(prev => ({
+        ...prev,
+        isConnected: false,
+        socketId: null,
+      }));
+    });
 
-        // Accumulate streaming content
-        streamingContentRef.current += data.text;
+    // Streaming events - direct approach
+    addListenerOnce("query_chunk", (data: { text: string }) => {
+      // Accumulate streaming content
+      streamingContentRef.current += data.text;
 
-        // Add or update assistant message with current content
-        if (currentAssistantMessageIdRef.current) {
+      // Add or update assistant message with current content
+      if (currentAssistantMessageIdRef.current) {
+        // Check if this message ID is already being processed globally
+        if (globalActiveMessageId === currentAssistantMessageIdRef.current) {
+          setMessages(prev => {
+            const messageExists = prev.some(
+              msg => msg.id === currentAssistantMessageIdRef.current
+            );
+
+            if (messageExists) {
+              return prev.map(msg =>
+                msg.id === currentAssistantMessageIdRef.current
+                  ? { ...msg, content: streamingContentRef.current }
+                  : msg
+              );
+            } else if (currentAssistantMessageIdRef.current) {
+              // Message doesn't exist in this instance, but is being processed globally
+              // Add it to this instance
+              const assistantMessage: ChatMessage = {
+                id: currentAssistantMessageIdRef.current,
+                role: "assistant",
+                content: streamingContentRef.current,
+                timestamp: new Date(),
+              };
+              return [...prev, assistantMessage];
+            }
+            return prev;
+          });
+        } else {
+          // This is a new message, set it as the global active message
+          globalActiveMessageId = currentAssistantMessageIdRef.current;
+          
           setMessages(prev => {
             const messageExists = prev.some(
               msg => msg.id === currentAssistantMessageIdRef.current
@@ -110,166 +183,132 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
             }
           });
         }
-      });
+      }
+    });
 
-      socket.on("query_complete", (data: { text: string }) => {
-        console.log("✅ Query streaming complete:", data.text);
-        console.log(
-          "✅ currentAssistantMessageIdRef.current:",
-          currentAssistantMessageIdRef.current
-        );
+    addListenerOnce("query_complete", (data: { text: string }) => {
+      setStreamingState(prev => ({
+        ...prev,
+        isStreaming: false,
+        currentStreamingMessage: "",
+      }));
+      setIsLoading(false);
 
-        setStreamingState(prev => ({
-          ...prev,
-          isStreaming: false,
-          currentStreamingMessage: "",
-        }));
-        setIsLoading(false);
-
-        // CRITICAL FIX: Add assistant message immediately
-        if (currentAssistantMessageIdRef.current) {
-          const assistantMessage: ChatMessage = {
-            id: currentAssistantMessageIdRef.current,
-            role: "assistant",
-            content: data.text,
-            timestamp: new Date(),
-          };
-
-          console.log("✅ Adding assistant message:", assistantMessage);
-          setMessages(prev => {
-            // Check if message already exists
-            const messageExists = prev.some(
-              msg => msg.id === currentAssistantMessageIdRef.current
-            );
-            if (messageExists) {
-              // Update existing message
-              return prev.map(msg =>
-                msg.id === currentAssistantMessageIdRef.current
-                  ? { ...msg, content: data.text }
-                  : msg
-              );
-            } else {
-              // Add new message
-              return [...prev, assistantMessage];
-            }
-          });
-        }
-
-        // Reset streaming content and refs after finalizing
-        streamingContentRef.current = "";
-        currentAssistantMessageIdRef.current = null;
-      });
-
-      // query_start is now sent by client, not received
-
-      socket.on("query_error", (data: { error: string; repo_id: string }) => {
-        console.error("Query error:", data.error);
-        setStreamingState(prev => ({
-          ...prev,
-          isStreaming: false,
-        }));
-        setIsLoading(false);
-
-        // Update the assistant message with error
-        const errorMessage =
-          "Sorry, there was an error processing your request. Please try again.";
-        if (currentAssistantMessageIdRef.current) {
-          setMessages(prev => {
-            const messageExists = prev.some(
-              msg => msg.id === currentAssistantMessageIdRef.current
-            );
-
-            if (!messageExists && currentAssistantMessageIdRef.current) {
-              const assistantMessage: ChatMessage = {
-                id: currentAssistantMessageIdRef.current,
-                role: "assistant",
-                content: errorMessage,
-                timestamp: new Date(),
-              };
-              return [...prev, assistantMessage];
-            } else {
-              return prev.map(msg =>
-                msg.id === currentAssistantMessageIdRef.current
-                  ? { ...msg, content: errorMessage }
-                  : msg
-              );
-            }
-          });
-        }
-
-        // Reset streaming content and refs
-        streamingContentRef.current = "";
-        currentAssistantMessageIdRef.current = null;
-      });
-
-      // Repository room events (simplified)
-      socket.on("joined_repo", (data: { repo_id: string; message: string }) => {
-        console.log("Joined repository:", data.message);
-      });
-
-      socket.on("connect_error", error => {
-        console.error("❌ Socket connection error:", error);
-        setStreamingState(prev => ({
-          ...prev,
-          isConnected: false,
-        }));
-      });
-
-      socket.on("reconnect", attemptNumber => {
-        console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
-        setStreamingState(prev => ({
-          ...prev,
-          isConnected: true,
-          socketId: socket.id || null,
-        }));
-      });
-
-      socket.on("reconnect_attempt", attemptNumber => {
-        console.log("🔄 Socket reconnection attempt", attemptNumber);
-      });
-
-      socket.on("reconnect_error", error => {
-        console.error("❌ Socket reconnection error:", error);
-      });
-    }
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.removeAllListeners();
-        socketRef.current.disconnect();
-        socketRef.current = null;
+      // Reset global active message if this was the active one
+      if (globalActiveMessageId === currentAssistantMessageIdRef.current) {
+        globalActiveMessageId = null;
       }
 
-      // Reset all refs on cleanup
+      // Reset streaming content and refs after finalizing
       streamingContentRef.current = "";
       currentAssistantMessageIdRef.current = null;
+    });
+
+    addListenerOnce("query_error", (data: { error: string; repo_id: string }) => {
+      console.error("Query error:", data.error);
+      setStreamingState(prev => ({
+        ...prev,
+        isStreaming: false,
+      }));
+      setIsLoading(false);
+
+      // Update the assistant message with error
+      const errorMessage =
+        "Sorry, there was an error processing your request. Please try again.";
+      if (currentAssistantMessageIdRef.current) {
+        setMessages(prev => {
+          const messageExists = prev.some(
+            msg => msg.id === currentAssistantMessageIdRef.current
+          );
+
+          if (!messageExists && currentAssistantMessageIdRef.current) {
+            const assistantMessage: ChatMessage = {
+              id: currentAssistantMessageIdRef.current,
+              role: "assistant",
+              content: errorMessage,
+              timestamp: new Date(),
+            };
+            return [...prev, assistantMessage];
+          } else {
+            return prev.map(msg =>
+              msg.id === currentAssistantMessageIdRef.current
+                ? { ...msg, content: errorMessage }
+                : msg
+            );
+          }
+        });
+      }
+
+      // Reset streaming content and refs
+      streamingContentRef.current = "";
+      currentAssistantMessageIdRef.current = null;
+    });
+
+    // Repository room events (simplified)
+    addListenerOnce("joined_repo", (data: { repo_id: string; message: string }) => {
+      // Repository joined successfully
+    });
+
+    addListenerOnce("connect_error", error => {
+      console.error("❌ Socket connection error:", error);
+      setStreamingState(prev => ({
+        ...prev,
+        isConnected: false,
+      }));
+    });
+
+    addListenerOnce("reconnect", attemptNumber => {
+      setStreamingState(prev => ({
+        ...prev,
+        isConnected: true,
+        socketId: socket.id || null,
+      }));
+    });
+
+    addListenerOnce("reconnect_attempt", attemptNumber => {
+      // Reconnection attempt in progress
+    });
+
+    addListenerOnce("reconnect_error", error => {
+      console.error("❌ Socket reconnection error:", error);
+    });
+
+    isInitializedRef.current = true;
+
+    return () => {
+      // Don't clean up global socket here, only reset local refs
+      streamingContentRef.current = "";
+      currentAssistantMessageIdRef.current = null;
+      isInitializedRef.current = false;
+      lastMessageRef.current = "";
+      lastMessageTimeRef.current = 0;
     };
   }, [serverUrl]);
 
   const sendMessage = useCallback(
     async (content: string) => {
-      console.log("🚀 sendMessage called with:", {
-        content,
-        isLoading,
-        isConnected: streamingState.isConnected,
-        repoId,
-        socketId: streamingState.socketId,
-      });
-
       if (
         !content.trim() ||
         isLoading ||
         !streamingState.isConnected ||
         !repoId
       ) {
-        console.log("❌ sendMessage blocked:", {
-          hasContent: !!content.trim(),
-          isLoading,
-          isConnected: streamingState.isConnected,
-          hasRepoId: !!repoId,
-        });
         return;
       }
+
+      // Prevent duplicate messages within 1 second
+      const now = Date.now();
+      const timeSinceLastMessage = now - lastMessageTimeRef.current;
+      if (
+        lastMessageRef.current === content.trim() &&
+        timeSinceLastMessage < 1000
+      ) {
+        return;
+      }
+
+      // Update last message tracking
+      lastMessageRef.current = content.trim();
+      lastMessageTimeRef.current = now;
 
       // Generate unique IDs using timestamp + random component
       const baseId = Date.now();
@@ -282,17 +321,15 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
 
       // Generate assistant message ID for streaming
       const assistantMessageId = `${baseId}-assistant-${Math.random().toString(36).substr(2, 9)}`;
-      console.log("🚀 Generated assistant message ID:", assistantMessageId);
+
+      // Reset global active message for new message
+      globalActiveMessageId = null;
 
       // Add user message and set up for streaming
       setMessages(prev => [...prev, userMessage]);
       setCurrentMessage("");
       setIsLoading(true);
       currentAssistantMessageIdRef.current = assistantMessageId;
-      console.log(
-        "🚀 Set currentAssistantMessageIdRef.current to:",
-        currentAssistantMessageIdRef.current
-      );
 
       setStreamingState(prev => ({
         ...prev,
@@ -311,7 +348,6 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
             query: content.trim(),
             mode: mode,
           });
-          console.log("📤 Sent query_start event to server");
         }
 
         const requestBody = {
@@ -321,9 +357,6 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
           socket_id: streamingState.socketId,
         };
 
-        console.log("📤 Sending request to:", `${serverUrl}/query/`);
-        console.log("📤 Request body:", requestBody);
-
         const response = await fetch(`${serverUrl}/query/`, {
           method: "POST",
           headers: {
@@ -332,14 +365,11 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
           body: JSON.stringify(requestBody),
         });
 
-        console.log("📥 Response status:", response.status);
-
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const result = await response.json();
-        console.log("✅ Query initiated successfully:", result);
       } catch (error) {
         console.error("Error sending message:", error);
         setIsLoading(false);
@@ -401,6 +431,8 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
     // Reset all refs
     streamingContentRef.current = "";
     currentAssistantMessageIdRef.current = null;
+    lastMessageRef.current = "";
+    lastMessageTimeRef.current = 0;
   }, []);
 
   const handleKeyPress = useCallback(
@@ -482,10 +514,29 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
   );
 
   const disconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.disconnect();
-      socketRef.current = null;
+    if (globalSocket) {
+      globalSocket.removeAllListeners();
+      globalSocket.disconnect();
+      globalSocket = null;
+      globalSocketServerUrl = null;
+      globalSocketListeners.clear();
     }
+    socketRef.current = null;
+    isInitializedRef.current = false;
+  }, []);
+
+  // Add cleanup effect for when component unmounts
+  useEffect(() => {
+    return () => {
+      // Only clean up if this is the last instance using the global socket
+      if (globalSocket && isInitializedRef.current) {
+        globalSocket.removeAllListeners();
+        globalSocket.disconnect();
+        globalSocket = null;
+        globalSocketServerUrl = null;
+        globalSocketListeners.clear();
+      }
+    };
   }, []);
 
   return {
