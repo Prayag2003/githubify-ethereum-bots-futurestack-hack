@@ -79,12 +79,12 @@ function VisualizeContent() {
   // Fetch file tree data
   const fetchFileTree = async (repoUrl: string) => {
     if (!repoUrl) return;
-    
+
     setIsLoadingTree(true);
     setTreeError(null);
-    
+
     try {
-      const treeData = await treeService.getFileTree(repoUrl);
+      const treeData = await treeService.getFileTree();
       setFileTree(treeData);
     } catch (error) {
       console.error('Error fetching file tree:', error);
@@ -97,9 +97,9 @@ function VisualizeContent() {
   // Load file content
   const loadFileContent = async (file: FileNode) => {
     if (file.type === "folder") return;
-    
+
     setIsLoadingFileContent(true);
-    
+
     try {
       const content = await treeService.getFileContent(file.id);
       setSelectedFile({ ...file, content });
@@ -114,8 +114,8 @@ function VisualizeContent() {
   // Simple syntax highlighting function
   const highlightCode = (code: string, language: string): string => {
     // Check if this is placeholder content - don't highlight it
-    if (code.includes('File content preview not available yet') || 
-        code.includes('This would be fetched from the backend API')) {
+    if (code.includes('File content preview not available yet') ||
+      code.includes('This would be fetched from the backend API')) {
       return code
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -220,22 +220,22 @@ function VisualizeContent() {
       )
       .map(node => (
         <div key={node.id}>
-            <div
-              className={cn(
-                "flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 transform hover:scale-105 group",
-                selectedFile?.id === node.id 
-                  ? "bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 shadow-lg" 
-                  : "hover:bg-gray-700/50 border border-transparent hover:border-gray-600"
-              )}
-              style={{ paddingLeft: `${level * 16 + 8}px` }}
-              onClick={() => {
-                if (node.type === "file") {
-                  loadFileContent(node);
-                } else {
-                  toggleFolder(node.id);
-                }
-              }}
-            >
+          <div
+            className={cn(
+              "flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-all duration-200 transform hover:scale-105 group",
+              selectedFile?.id === node.id
+                ? "bg-gradient-to-r from-blue-600/20 to-cyan-600/20 border border-blue-500/30 shadow-lg"
+                : "hover:bg-gray-700/50 border border-transparent hover:border-gray-600"
+            )}
+            style={{ paddingLeft: `${level * 16 + 8}px` }}
+            onClick={() => {
+              if (node.type === "file") {
+                loadFileContent(node);
+              } else {
+                toggleFolder(node.id);
+              }
+            }}
+          >
             {node.type === "folder" &&
               (expandedFolders.has(node.id) ? (
                 <ChevronDown className="h-4 w-4 text-gray-400" />
@@ -267,7 +267,7 @@ function VisualizeContent() {
     <div className="min-h-screen bg-gray-900 text-white flex relative">
       {/* Mobile Backdrop */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -312,7 +312,7 @@ function VisualizeContent() {
                 <span className="font-semibold">Analyze Codebase</span>
                 <Sparkles className="h-4 w-4 ml-auto" />
               </button>
-              
+
               <div className="flex gap-2">
                 <button
                   onClick={() => {
@@ -500,7 +500,7 @@ function VisualizeContent() {
               </div>
             </div>
           )}
-          
+
           {activeTab === "tree" ? (
             <>
               {/* File Tree */}
@@ -579,7 +579,7 @@ function VisualizeContent() {
                     {selectedFile && (
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-500 mr-2">Read-only</span>
-                        <button 
+                        <button
                           onClick={() => {
                             if (selectedFile.content) {
                               navigator.clipboard.writeText(selectedFile.content);
@@ -619,8 +619,8 @@ function VisualizeContent() {
                           {/* Code Content */}
                           <div className="flex-1 overflow-auto">
                             <pre className="p-4 text-sm leading-6 font-mono">
-                              <code className="text-gray-300" dangerouslySetInnerHTML={{ 
-                                __html: highlightCode(selectedFile.content, selectedFile.ext || '') 
+                              <code className="text-gray-300" dangerouslySetInnerHTML={{
+                                __html: highlightCode(selectedFile.content, selectedFile.ext || '')
                               }} />
                             </pre>
                           </div>
@@ -631,7 +631,7 @@ function VisualizeContent() {
                             <File className="h-16 w-16 mx-auto mb-4 text-gray-600" />
                             <h3 className="text-lg font-semibold mb-2 text-gray-300">{selectedFile.name}</h3>
                             <p className="text-sm mb-4">
-                              {selectedFile.type === "folder" 
+                              {selectedFile.type === "folder"
                                 ? "This is a folder containing files and subfolders"
                                 : `File type: ${selectedFile.ext || 'unknown'}`}
                             </p>
@@ -662,7 +662,7 @@ function VisualizeContent() {
           ) : (
             /* Architecture Diagram */
             <div className="flex-1 relative">
-      <DiagramViewer />
+              <DiagramViewer />
             </div>
           )}
         </div>
