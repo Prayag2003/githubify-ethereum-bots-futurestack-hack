@@ -88,7 +88,7 @@ function ChatContent() {
       <div className="flex-1 flex flex-col h-screen">
         {/* Minimalistic Header - Fixed */}
         <header className="bg-white/5 backdrop-blur-sm border-b border-white/10 p-6 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span className="text-xl font-light tracking-wide">
               Githubify AI
             </span>
@@ -116,9 +116,9 @@ function ChatContent() {
                   <span className="text-blue-400">Streaming</span>
                 </div>
               )}
-              {repoId && (
+              {/* {repoId && (
                 <span className="text-white/50 text-xs">{mode} mode</span>
-              )}
+              )} */}
             </div>
           </div>
         </header>
