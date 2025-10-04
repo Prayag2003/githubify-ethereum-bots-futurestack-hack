@@ -5,8 +5,32 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Normalize GitHub URL by adding https:// if no protocol is present
+ * Following KISS principle - simple URL normalization
+ * Only adds protocol if completely missing, preserves user's choice
+ */
+export function normalizeGitHubUrl(url: string): string {
+  const trimmedUrl = url.trim();
+  
+  // If URL already has a protocol, return as is
+  if (trimmedUrl.startsWith('https://')) {
+    return trimmedUrl;
+  }
+  
+  // Only add https:// if no protocol is present at all
+  if (!trimmedUrl.includes('://')) {
+    return `https://${trimmedUrl}`;
+  }
+  
+  // Return as is if it has some other protocol or is just a domain
+  return trimmedUrl;
+}
+
 export function extractGitHubInfo(url: string) {
-  const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  // Normalize the URL first
+  const normalizedUrl = normalizeGitHubUrl(url);
+  const match = normalizedUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
   if (match) {
     return {
       owner: match[1],

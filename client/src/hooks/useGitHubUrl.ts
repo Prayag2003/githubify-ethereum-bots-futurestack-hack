@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { GitHubUrlValidation } from "@/types";
-import { extractGitHubInfo } from "@/lib/utils";
+import { extractGitHubInfo, normalizeGitHubUrl } from "@/lib/utils";
 
 /**
  * Custom hook for GitHub URL management following DRY principle
@@ -30,12 +30,17 @@ export function useGitHubUrl() {
     []
   );
 
+  const getNormalizedUrl = useCallback(() => {
+    return normalizeGitHubUrl(url);
+  }, [url]);
+
   const isValid = validateUrl(url).isValid;
 
   return {
     url,
-    setUrl,
+    setUrl, // Allow direct setting without auto-normalization
     validateUrl,
     isValid,
+    getNormalizedUrl, // Provide method to get normalized URL when needed
   };
 }

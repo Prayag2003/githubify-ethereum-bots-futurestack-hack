@@ -232,7 +232,7 @@ async def handle_query(github_url: str, query: str, mode: str = "fast") -> str:
         context = _build_context(relevant_files)
         user_prompt = _build_user_prompt(query, context)
 
-        chosen_model = "llama3.1-70b" if mode == "accurate" else "llama3.1-8b"
+        chosen_model = "llama3.1-8b" if mode == "accurate" else "llama3.1-8b"
 
         response = await llm.completion(
             user_prompt,
@@ -266,8 +266,13 @@ async def handle_query_stream(repo_id: str, query: str, mode: str = "fast", sock
 
         if not relevant_files:
             msg = "No relevant code found in this repository."
-            if socket_id and sio:
+            if socket_id and sio is not None:
+                logger.info(f"📤 Emitting query_complete to socket {socket_id}: {msg}")
                 await sio.emit("query_complete", {"text": msg}, to=socket_id)
+                logger.info(f"✅ Successfully emitted query_complete to socket {socket_id}")
+            else:
+                logger.warning(f"⚠️ Cannot emit query_complete: socket_id={socket_id}, sio={sio is not None}")
+            logger.info(msg)  # log to server
             return msg
 
         context = _build_context(relevant_files)

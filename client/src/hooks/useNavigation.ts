@@ -9,20 +9,20 @@ export function useNavigation() {
   const router = useRouter();
 
   const navigateToChat = useCallback(
-    (repoUrl: string) => {
-      if (repoUrl.trim()) {
-        const encodedUrl = encodeURIComponent(repoUrl.trim());
-        router.push(`/chat?repo=${encodedUrl}`);
+    (repoId: string) => {
+      if (repoId.trim()) {
+        const encodedRepoId = encodeURIComponent(repoId.trim());
+        router.push(`/chat?repo=${encodedRepoId}`);
       }
     },
     [router]
   );
 
   const navigateToVisualize = useCallback(
-    (repoUrl: string) => {
-      if (repoUrl.trim()) {
-        const encodedUrl = encodeURIComponent(repoUrl.trim());
-        router.push(`/visualize?repo=${encodedUrl}`);
+    (repoId: string) => {
+      if (repoId.trim()) {
+        const encodedRepoId = encodeURIComponent(repoId.trim());
+        router.push(`/visualize?repo=${encodedRepoId}`);
       }
     },
     [router]
