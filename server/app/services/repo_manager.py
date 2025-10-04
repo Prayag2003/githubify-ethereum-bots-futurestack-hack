@@ -45,6 +45,7 @@ def clone_repo(github_url: str, token: Optional[str] = None) -> str:
                  raise ValueError("Authentication failed for private repository. Is the token correct?")
             raise e
     else:
+        repo_id = ""
         print(f"Repo already cloned at {repo_path}")
 
     return repo_id

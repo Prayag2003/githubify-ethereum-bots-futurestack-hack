@@ -1,5 +1,6 @@
 import logging
 import re
+import hashlib
 from fastapi import APIRouter
 from app.models.schemas import RepoRequest
 from app.services import repo_manager
@@ -17,6 +18,11 @@ def sanitize_github_url(url: str) -> str:
     print("URL", url)
     return url
 
+def _get_repo_id(github_url: str, length: int = 20) -> str:
+    """Generate deterministic repo ID from GitHub URL using SHA256."""
+    sha = hashlib.sha256(github_url.encode("utf-8")).hexdigest()
+    return sha[:length]
+
 @router.post("/ingest")
 def ingest_repo(payload: RepoRequest):
     """Clone, parse, embed, and store repository in Pinecone."""
@@ -31,6 +37,13 @@ def ingest_repo(payload: RepoRequest):
         # Step 1: Clone repository
         logger.info("🔗 Cloning repository: %s", payload.github_url)
         repo_id = repo_manager.clone_repo(sanitized_url, token=getattr(payload, "token", None))
+        if repo_id == "": 
+             return StandardResponse.success(
+            {
+                "repo_id": _get_repo_id(payload.github_url),
+                "status": "already cloned",
+            }
+        )
         logger.info("✅ Repository cloned successfully: %s", repo_id)
         
         # Step 2: Parse to chunked documents
