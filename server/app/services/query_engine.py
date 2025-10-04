@@ -24,6 +24,10 @@ IGNORE = {
 # Initialize Cerebras client
 llm = CerebrasLLMClientAsync(default_model="llama3.1-8b")
 
+# File reading configuration
+MAX_FILE_SIZE = 500000  # 500KB - files larger than this will use code snippet
+MAX_READ_SIZE = 2000  # 100KB - files larger than this will be truncated
+
 # ============================================================
 # 🔹 REPOSITORY UTILITIES
 # ============================================================
@@ -188,15 +192,42 @@ Codebase Tree:
 def _build_context(relevant_files: List[Dict]) -> str:
     """Format retrieved code snippets for LLM input."""
     context_parts = []
+    file_cache = {}  # Cache to store file content
     
     for i, file_info in enumerate(relevant_files, 1):
-        try:
-            with open(file_info['full_file_path'], "r", encoding="utf-8") as f:
-                full_code = f.read()
-        except (FileNotFoundError, IOError) as e:
-            # Fallback to code snippet if file not found
+        file_path = file_info['full_file_path']
+        
+        # Check if file is already cached
+        if file_path in file_cache:
+            # full_code = file_cache[file_path]
+            logger.debug(f"Using cached content for {file_path}")
+            # file_cache[file_path] = full_code
             full_code = file_info['code']
-            logger.warning(f"Could not read file {file_info['full_file_path']}: {e}")
+            logger.debug(f"Using cached content for {file_path}")
+        else:
+            try:
+                # Check file size first
+                file_size = os.path.getsize(file_path)
+                if file_size > MAX_FILE_SIZE:
+                    logger.warning(f"File {file_path} is too large ({file_size} bytes), using code snippet instead")
+                    full_code = file_info['code']
+                else:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        # Read only first MAX_READ_SIZE characters for very large files
+                        if file_size > MAX_READ_SIZE:
+                            full_code = f.read(MAX_READ_SIZE) + "\n\n... [File truncated - too large for full display]"
+                            logger.info(f"Truncated large file {file_path} ({file_size} bytes)")
+                        else:
+                            full_code = f.read()
+                
+                # Cache the file content
+                file_cache[file_path] = full_code
+                logger.debug(f"Cached content for {file_path}")
+            except (FileNotFoundError, IOError) as e:
+                # Fallback to code snippet if file not found
+                full_code = file_info['code']
+                file_cache[file_path] = full_code  # Cache the fallback too
+                logger.warning(f"Could not read file {file_path}: {e}")
         
         filename = file_info['filename']
         language = file_info['language']
