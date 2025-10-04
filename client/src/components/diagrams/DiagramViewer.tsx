@@ -13,7 +13,7 @@ import ReactFlow, {
   Edge,
 } from "reactflow";
 import dagre from "dagre";
-// import "reactflow/dist/style.css";
+import "reactflow/dist/style.css";
 import {
   Search,
   Layers,
@@ -122,15 +122,17 @@ const parseMermaidToFlow = (mermaidContent: string): ParsedData => {
   const nodes = new Map<string, Node<NodeData>>();
   const edges: Edge[] = [];
 
+
   lines.forEach(line => {
     const trimmed = line.trim();
 
     if (trimmed.startsWith("graph")) return;
 
-    const nodeMatch = trimmed.match(/(\w+)\[([^\]]+)\]/g);
-    if (nodeMatch) {
-      nodeMatch.forEach(match => {
-        const matchResult = match.match(/(\w+)\[([^\]]+)\]/);
+    // Improved node parsing - handle various node formats
+    const nodeMatches = trimmed.match(/([A-Za-z0-9_]+)\[([^\]]+)\]/g);
+    if (nodeMatches) {
+      nodeMatches.forEach(match => {
+        const matchResult = match.match(/([A-Za-z0-9_]+)\[([^\]]+)\]/);
         if (matchResult) {
           const [, id, label] = matchResult;
           if (!nodes.has(id)) {
@@ -148,40 +150,43 @@ const parseMermaidToFlow = (mermaidContent: string): ParsedData => {
       });
     }
 
-    const arrowMatch = trimmed.match(
-      /(\w+)\s*(-->|-.->(?:\|[^|]+\|->)?)\s*(\w+)/
-    );
-    if (arrowMatch) {
-      const [, source, arrow, target] = arrowMatch;
-      const isDashed = arrow.includes("-.-");
+    // Improved edge parsing - handle complex arrow syntax
+    // Match patterns like: A -->|contains|> B, A -.->|uses|> B, etc.
+    const edgeMatches = trimmed.match(/([A-Za-z0-9_]+)\s*(-->|-.->)(?:\|([^|]+)\|>)?\s*([A-Za-z0-9_]+)/g);
+    if (edgeMatches) {
+      edgeMatches.forEach(match => {
+        const edgeResult = match.match(/([A-Za-z0-9_]+)\s*(-->|-.->)(?:\|([^|]+)\|>)?\s*([A-Za-z0-9_]+)/);
+        if (edgeResult) {
+          const [, source, arrow, label, target] = edgeResult;
+          const isDashed = arrow.includes("-.-");
 
-      let label = "";
-      const labelMatch = arrow.match(/\|([^|]+)\|/);
-      if (labelMatch) {
-        label = labelMatch[1];
-      }
-
-      edges.push({
-        id: `${source}-${target}-${edges.length}`,
-        source,
-        target,
-        type: "smoothstep",
-        animated: isDashed,
-        style: {
-          stroke: isDashed ? "#94a3b8" : "#64748b",
-          strokeWidth: 2,
-          strokeDasharray: isDashed ? "5,5" : "0",
-        },
-        label: label || undefined,
-        labelStyle: { fill: "#64748b", fontSize: 11, fontWeight: 500 },
-        labelBgStyle: { fill: "#ffffff", fillOpacity: 0.8 },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: isDashed ? "#94a3b8" : "#64748b",
-        },
+          // Only create edge if both source and target nodes exist
+          if (nodes.has(source) && nodes.has(target)) {
+            edges.push({
+              id: `${source}-${target}-${edges.length}`,
+              source,
+              target,
+              type: "smoothstep",
+              animated: isDashed,
+              style: {
+                stroke: isDashed ? "#94a3b8" : "#64748b",
+                strokeWidth: 2,
+                strokeDasharray: isDashed ? "5,5" : "0",
+              },
+              label: label ? label.trim() : undefined,
+              labelStyle: { fill: "#64748b", fontSize: 11, fontWeight: 500 },
+              labelBgStyle: { fill: "#ffffff", fillOpacity: 0.8 },
+              markerEnd: {
+                type: MarkerType.ArrowClosed,
+                color: isDashed ? "#94a3b8" : "#64748b",
+              },
+            });
+          }
+        }
       });
     }
   });
+
 
   return {
     nodes: Array.from(nodes.values()),
@@ -524,7 +529,6 @@ const DiagramViewerInner: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
-        fitView
         minZoom={0.1}
         maxZoom={2}
       >
