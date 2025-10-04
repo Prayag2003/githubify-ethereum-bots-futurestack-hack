@@ -1,21 +1,172 @@
 import logging
 import hashlib
+import os
 from typing import List, Dict
 from .cerebras_engine import CerebrasLLMClientAsync
 from app.vector_db.vector_store import PineconeVectorStore
-
+from app.agents.architect.tree_generator import build_code_tree 
 logger = logging.getLogger(__name__)
+from pathlib import Path
+
+# Customize these patterns to ignore
+IGNORE = {
+    "__pycache__",
+    ".DS_Store",
+    "node_modules",
+    ".venv",
+    "venv",
+    ".pytest_cache",
+    "repos/",
+    ".git", "node_modules", "__pycache__", "venv", "env", "build", "dist",
+            ".next", ".nuxt", "coverage", "migrations", "static", "media", "uploads"
+}
 
 # Initialize Cerebras client
 llm = CerebrasLLMClientAsync(default_model="llama3.1-8b")
+
+# ============================================================
+# 🔹 REPOSITORY UTILITIES
+# ============================================================
+
+def read_readme(repo_id: str) -> str | None:
+    """Return the README.md content if it exists in the repo root."""
+    candidates = ["README.md", "README.MD", "readme.md"]
+    for fname in candidates:
+        readme_path = os.path.join(repo_id, fname)
+        if os.path.exists(readme_path):
+            with open(readme_path, "r", encoding="utf-8") as f:
+                return f.read()
+    return None
+
 
 def _get_repo_id(github_url: str, length: int = 20) -> str:
     """Generate deterministic repo ID from GitHub URL using SHA256."""
     sha = hashlib.sha256(github_url.encode("utf-8")).hexdigest()
     return sha[:length]
 
+def get_repo_structure(root_path: str):
+    repo_structure = {}
+
+    root = Path(root_path).resolve()
+    
+    def scan_dir(path: Path):
+        structure = {}
+        for item in path.iterdir():
+            if item.name in IGNORE:
+                continue
+            if item.is_dir():
+                structure[item.name] = scan_dir(item)
+            else:
+                structure[item.name] = None
+        return structure
+
+    repo_structure[root.name] = scan_dir(root)
+    return repo_structure
+
+
+def build_system_prompt(repo_path: str) -> str:
+    """Build a detailed system prompt including README.md and code tree."""
+    readme_content = read_readme(repo_path)
+    ignore_dirs = [".git", "__pycache__", "node_modules"]
+    code_tree = build_code_tree(repo_path, ignore_dirs=ignore_dirs)
+
+    prompt = f"""
+🧠 **SYSTEM PROMPT — EXPERT CODEBASE ANALYST & SOFTWARE ENGINEERING ASSISTANT**
+
+### ROLE
+You are a **highly specialized AI codebase analyst**. Your mission is to **analyze, explain, and summarize the provided repository** strictly based on the content in the context. You must provide structured, actionable, and cross-file insights.
+
+### CONTEXTUAL BOUNDARIES
+1. Only use the provided repository content: code files, README.md, configuration files, and code tree.
+2. Never invent code, external libraries, or knowledge outside the repository unless explicitly needed for clarification.
+3. If snippets are incomplete, **explain what can be inferred**, but never hallucinate.
+
+### CORE DIRECTIVES
+
+#### 1. Project Understanding
+- Provide **high-level summaries**: purpose, scope, main technologies, frameworks, entry points.
+- Highlight key modules, their responsibilities, and relationships.
+- Explain cross-file interactions, imports, function calls, and shared utilities.
+- Give guidance on how to get started with the codebase if requested.
+
+#### 2. Code Snippets
+- Quote **existing snippets exactly** with file path and function/class reference.
+- For explanations, reference file paths explicitly.
+
+#### 3. Logic Flow & Relationships
+- Describe sequences of operations, data flow, and interactions between components.
+- Provide structured sections: Overview, Key Components, Logic Flow, Example Snippets, Observations, Final Answer.
+
+#### 4. README.md & Code Tree
+- README.md and the repository tree should only be used **if relevant** to clarify project structure or purpose.
+- Do not inject README or tree content unnecessarily.
+
+#### 5. Guardrails
+- Never hallucinate implementation details.
+- When information is incomplete, provide structured inference, not vague statements.
+- Always highlight missing or ambiguous parts.
+
+### OUTPUT FORMAT
+All responses must be in **Markdown** and follow this structure:
+
+```
+## Overview
+
+* Purpose
+* Technologies
+* Entry points
+
+## Key Components
+
+* Main modules/files
+* Responsibilities
+
+## Logic Flow
+
+* Cross-file interactions
+* Data flow
+
+## Example Snippets
+
+* Existing code snippets with file path references
+
+## Observations & Inferences
+
+* Assumptions
+* Missing context
+
+## Final Answer
+
+* Concise, actionable summary
+
+````
+
+- Use fenced code blocks for all code (```python, ```js, etc.).
+- Reference file paths wherever possible.
+- Provide structured guidance even with partial context.
+
+### FAILURE MODE
+If a question cannot be answered from the repository context:
+> "That information is outside the scope of the provided repository context."
+
+---
+
+### REPOSITORY INJECTION (Use only if relevant)
+README.md Content:
+{readme_content[:5000] if readme_content else "No README.md found."}
+
+Codebase Tree:
+{code_tree if code_tree else "Code tree not available."}
+"""
+    return prompt
+
+
+# ============================================================
+# 🔹 INTERNAL PROMPT UTILITIES
+# ============================================================
+
 def _build_context(relevant_files: List[Dict]) -> str:
-    """Build formatted context from retrieved files."""
+    """Format retrieved code snippets for LLM input."""
     context_parts = []
     for i, file_info in enumerate(relevant_files, 1):
         filename = file_info['filename']
@@ -29,68 +180,85 @@ def _build_context(relevant_files: List[Dict]) -> str:
 ```{language}
 {code}
 ```""")
+
     return "\n".join(context_parts)
 
 
-async def handle_query(repo_id: str, query: str, mode: str = "fast") -> str:
-    """
-    Handle a standard (non-streaming) user query against the codebase.
-    """
-    try:
-        repo_id = _get_repo_id(repo_id)
-        logger.info(f"Querying repo {repo_id}: {query}")
+def _build_user_prompt(query: str, context: str) -> str:
+    """Combine user query and repository context into a single prompt."""
+    return f"""
+You are analyzing the provided repository context.
 
-        # Retrieve relevant code
-        vector_store = PineconeVectorStore(repo_id)
-        relevant_files = vector_store.search_with_context(query, top_k=5)
+---
 
-        if not relevant_files:
-            return "I couldn't find any relevant code in this repository to answer your question."
+### USER QUESTION:
+{query}
 
-        # Build context
-        context = _build_context(relevant_files)
+---
 
-        # Choose model
-        model_map = {"fast": "llama3.1-8b", "accurate": "llama3.1-70b"}
-        chosen_model = model_map.get(mode, "llama3.1-8b")
-
-        # Prompts
-        system_prompt = """You are an expert code analysis assistant.
-Analyze the code carefully and answer questions accurately.
-Always reference specific files/functions when relevant.
-If code is insufficient, explain what's missing."""
-
-        user_prompt = f"""Based on the following code from the repository, answer this question:
-
-**Question:** {query}
-
-**Relevant Code Files:**
+### CONTEXT:
 {context}
 
-**Answer:**"""
+---
 
-        # Get response from Cerebras
+### TASK:
+Answer strictly using the provided codebase.
+Explain cross-file relationships, logic flow, and functionality.
+Provide actionable and structured explanations, using Markdown.
+
+**Final Answer:**
+"""
+
+
+# ============================================================
+# 🔹 NORMAL QUERY HANDLER
+# ============================================================
+
+async def handle_query(github_url: str, query: str, mode: str = "fast") -> str:
+    """Handle standard (non-streaming) query."""
+    try:
+        repo_id = _get_repo_id(github_url)
+        repo_path = os.path.join("repos", repo_id)
+        system_prompt = build_system_prompt(repo_path)
+
+        logger.info(f"Querying repo {repo_id}: {query}")
+
+        vector_store = PineconeVectorStore(repo_id)
+        relevant_files = vector_store.search_with_context(query, top_k=10)
+
+        if not relevant_files:
+            return "No relevant code found in this repository to answer your question."
+
+        context = _build_context(relevant_files)
+        user_prompt = _build_user_prompt(query, context)
+
+        chosen_model = "llama3.1-70b" if mode == "accurate" else "llama3.1-8b"
+
         response = await llm.completion(
             user_prompt,
             model=chosen_model,
             system_prompt=system_prompt
         )
 
-        answer = response["text"]
+        answer = response.get("text", "")
         logger.info(f"Generated answer ({len(answer)} chars)")
-        return answer
+        return answer or "No response generated."
 
     except Exception as e:
-        logger.error(f"Query handling error: {e}")
-        raise
+        logger.exception("Error while handling query")
+        return f"An error occurred while processing your query: {e}"
 
 
-async def handle_query_stream(repo_id: str, query: str, mode: str = "accurate", socket_id: str | None = None, sio=None) -> str:
-    """
-    Stream a user query to the client via Socket.IO and log each chunk.
-    """
+# ============================================================
+# 🔹 STREAMING QUERY HANDLER
+# ============================================================
+
+async def handle_query_stream(repo_id: str, query: str, mode: str = "fast", socket_id: str | None = None, sio=None) -> str:
+    """Stream query response via Socket.IO."""
     try:
-        repo_id = _get_repo_id(repo_id)
+        repo_path = os.path.join("repos", repo_id)
+        system_prompt = build_system_prompt(repo_path)
+
         logger.info(f"Streaming query for repo {repo_id}: {query}")
 
         vector_store = PineconeVectorStore(repo_id)
@@ -98,33 +266,20 @@ async def handle_query_stream(repo_id: str, query: str, mode: str = "accurate", 
 
         if not relevant_files:
             msg = "No relevant code found in this repository."
-            if socket_id and sio is not None:
+            if socket_id and sio:
                 await sio.emit("query_complete", {"text": msg}, to=socket_id)
-            logger.info(msg)  # log to server
             return msg
 
         context = _build_context(relevant_files)
+        user_prompt = _build_user_prompt(query, context)
         chosen_model = "llama3.1-70b" if mode == "accurate" else "llama3.1-8b"
 
-        system_prompt = """You are an expert code analysis assistant.
-Analyze the code carefully and answer questions accurately.
-Always reference specific files/functions when relevant.
-If code is insufficient, explain what's missing."""
-
-        user_prompt = f"""Based on the following code from the repository, answer this question:
-
-**Question:** {query}
-
-**Relevant Code Files:**
-{context}
-
-**Answer:**"""
-
-        # Stream via Cerebras client
         full_text = ""
         stream = await llm.client.chat.completions.create(
-            messages=[{"role": "system", "content": system_prompt},
-                      {"role": "user", "content": user_prompt}],
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
             model=chosen_model,
             stream=True
         )
@@ -133,20 +288,19 @@ If code is insufficient, explain what's missing."""
             delta = chunk.choices[0].delta.content or ""
             full_text += delta
 
-            # Emit to Socket.IO
-            if socket_id and sio is not None:
+            if socket_id and sio:
                 await sio.emit("query_chunk", {"text": delta}, to=socket_id)
 
-            # Log chunk in FastAPI server logs
-            logger.info(f"Stream chunk: {delta}")
+            logger.info(f"Stream chunk: {delta.strip()}")
 
-        # Send final completion event
-        if socket_id and sio is not None:
+        if socket_id and sio:
             await sio.emit("query_complete", {"text": full_text}, to=socket_id)
 
-        logger.info("Streaming query complete.")
+        logger.info("Streaming query completed successfully.")
         return full_text
 
     except Exception as e:
-        logger.error(f"Streaming query error: {e}")
-        raise
+        logger.exception("Streaming query error")
+        if socket_id and sio:
+            await sio.emit("query_complete", {"text": f"Error: {str(e)}"}, to=socket_id)
+        return f"Error during streaming query: {e}"

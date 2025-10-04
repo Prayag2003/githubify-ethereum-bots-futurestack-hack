@@ -29,3 +29,5 @@ python-socketio>=5.7.0
 aiohttp
 
 numpy>=1.21.0
+
+requests
