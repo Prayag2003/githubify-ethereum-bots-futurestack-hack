@@ -16,7 +16,8 @@ class PineconeVectorStore:
         "code-repositories-1",
         "code-repositories-2", 
         "code-repositories-3",
-        "code-repositories-4"
+        "code-repositories-4",
+        "code-repositories-5"
     ]
     
     def __init__(self, repo_id: str):
@@ -187,7 +188,8 @@ Full Code Context:
                     "chunk_size": doc.metadata.get('chunk_size', 0),
                     "repo_id": self.repo_id,
                     "code_snippet": doc.page_content[:2000],
-                    "is_readme": 'true' if 'readme' in doc.metadata.get('filename', '').lower() else 'false'
+                    "is_readme": 'true' if 'readme' in doc.metadata.get('filename', '').lower() else 'false',
+                    "full_file_path": doc.metadata.get('full_file_path', '')
                 }
                 vector_id = f"{self.repo_id}_{idx}_{metadata['filename'].replace('/', '_')}"
                 vectors.append({
@@ -244,7 +246,8 @@ Full Code Context:
                     'language': metadata.get('language', 'unknown'),
                     'code': metadata.get('code_snippet', ''),
                     'similarity': round(match.get('score', 0), 4),
-                    'is_readme': metadata.get('is_readme', 'false')
+                    'is_readme': metadata.get('is_readme', 'false'),
+                    'full_file_path': metadata.get('full_file_path', '')
                 })
             # Sort README first
             formatted_results.sort(key=lambda x: 0 if x['is_readme'] == 'true' else 1)

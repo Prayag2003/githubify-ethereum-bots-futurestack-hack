@@ -201,7 +201,8 @@ def load_codebase_as_chunked_docs(repo_root: str) -> List[Document]:
             
             try:
                 with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    content = f.read()
+                    # content = f.read()
+                    content = "You may use this file as a context to answer the user's question. You need to provide best possible answer to the user's question."
                 
                 # Skip empty files
                 if not content.strip():
@@ -217,6 +218,7 @@ def load_codebase_as_chunked_docs(repo_root: str) -> List[Document]:
                 
                 # Create base metadata (matching old format for compatibility)
                 base_metadata = {
+                    "full_file_path": file_path,
                     "filename": relative_path,
                     "language": ext.lstrip('.'),  # Remove dot for language field
                     "file_extension": ext,
