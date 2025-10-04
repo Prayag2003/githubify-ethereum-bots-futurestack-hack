@@ -20,7 +20,7 @@ export const CHAT_CONFIG = {
 
 // Server configuration
 export const SERVER_CONFIG = {
-  DEFAULT_URL: "http://localhost:8000",
+  DEFAULT_URL: process.env.NEXT_PUBLIC_SERVER_URL,
   SOCKET_PATH: "/socket.io",
   TRANSPORTS: ["websocket", "polling"],
 } as const;

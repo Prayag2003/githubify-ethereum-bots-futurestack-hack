@@ -29,7 +29,7 @@ export interface FileNode {
 }
 
 class TreeService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  private baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
   /**
    * Convert API tree structure to component-friendly format
@@ -104,7 +104,7 @@ class TreeService {
 
       // Extract the repo_id from the response
       const repoId = data.data.repo_id;
-      
+
       // If repo_id is empty or not found, use the first available repository
       if (!repoId || repoId === '') {
         if (data.data.tree.children && data.data.tree.children.length > 0) {
@@ -112,10 +112,10 @@ class TreeService {
         }
         return [];
       }
-      
+
       // Find the correct repository in the nested structure
       const repositoryNode = this.findRepositoryInTree(data.data.tree, repoId);
-      
+
       if (!repositoryNode) {
         // If we can't find the specific repo, use the first available one
         if (data.data.tree.children && data.data.tree.children.length > 0) {
@@ -140,7 +140,7 @@ class TreeService {
     // For now, return a placeholder with file info
     const fileName = filePath.split('/').pop() || filePath;
     const fileExt = fileName.split('.').pop() || 'unknown';
-    
+
     return `// File: ${fileName}
 // Path: ${filePath}
 // Type: ${fileExt}
