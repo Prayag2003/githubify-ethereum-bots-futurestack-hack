@@ -99,7 +99,11 @@ async def handle_query_stream(repo_id: str, query: str, mode: str = "accurate", 
         if not relevant_files:
             msg = "No relevant code found in this repository."
             if socket_id and sio is not None:
+                logger.info(f"📤 Emitting query_complete to socket {socket_id}: {msg}")
                 await sio.emit("query_complete", {"text": msg}, to=socket_id)
+                logger.info(f"✅ Successfully emitted query_complete to socket {socket_id}")
+            else:
+                logger.warning(f"⚠️ Cannot emit query_complete: socket_id={socket_id}, sio={sio is not None}")
             logger.info(msg)  # log to server
             return msg
 

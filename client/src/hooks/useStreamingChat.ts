@@ -39,10 +39,10 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
   });
 
   const socketRef = useRef<Socket | null>(null);
-  const currentAssistantMessageRef = useRef<ChatMessage | null>(null);
+  const currentAssistantMessageIdRef = useRef<string | null>(null);
   const streamingContentRef = useRef<string>("");
 
-  // Initialize Socket.IO connection
+
   useEffect(() => {
     if (!socketRef.current) {
       console.log("🔌 Initializing socket connection to:", serverUrl);
@@ -76,29 +76,41 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         }));
       });
 
-      // Streaming events - updated for new architecture
+      // Streaming events - direct approach
       socket.on("query_chunk", (data: { text: string }) => {
         console.log("📝 Received query chunk:", data.text);
         
-        // Update streaming content ref immediately
+        // Accumulate streaming content
         streamingContentRef.current += data.text;
         
-        // Update the current assistant message in real-time
-        if (currentAssistantMessageRef.current) {
-          currentAssistantMessageRef.current.content = streamingContentRef.current;
-          
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === currentAssistantMessageRef.current?.id 
-                ? { ...msg, content: streamingContentRef.current }
-                : msg
-            )
-          );
+        // Add or update assistant message with current content
+        if (currentAssistantMessageIdRef.current) {
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === currentAssistantMessageIdRef.current);
+            
+            if (!messageExists && currentAssistantMessageIdRef.current) {
+              const assistantMessage: ChatMessage = {
+                id: currentAssistantMessageIdRef.current,
+                role: "assistant",
+                content: streamingContentRef.current,
+                timestamp: new Date(),
+              };
+              return [...prev, assistantMessage];
+            } else {
+              return prev.map(msg => 
+                msg.id === currentAssistantMessageIdRef.current 
+                  ? { ...msg, content: streamingContentRef.current }
+                  : msg
+              );
+            }
+          });
         }
       });
 
       socket.on("query_complete", (data: { text: string }) => {
         console.log("✅ Query streaming complete:", data.text);
+        console.log("✅ currentAssistantMessageIdRef.current:", currentAssistantMessageIdRef.current);
+        
         setStreamingState(prev => ({
           ...prev,
           isStreaming: false,
@@ -106,22 +118,36 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         }));
         setIsLoading(false);
         
-        // Finalize the assistant message with the complete response
-        if (currentAssistantMessageRef.current) {
-          currentAssistantMessageRef.current.content = data.text;
+        // CRITICAL FIX: Add assistant message immediately
+        if (currentAssistantMessageIdRef.current) {
+          const assistantMessage: ChatMessage = {
+            id: currentAssistantMessageIdRef.current,
+            role: "assistant",
+            content: data.text,
+            timestamp: new Date(),
+          };
           
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === currentAssistantMessageRef.current?.id 
-                ? { ...msg, content: data.text }
-                : msg
-            )
-          );
+          console.log("✅ Adding assistant message:", assistantMessage);
+          setMessages(prev => {
+            // Check if message already exists
+            const messageExists = prev.some(msg => msg.id === currentAssistantMessageIdRef.current);
+            if (messageExists) {
+              // Update existing message
+              return prev.map(msg => 
+                msg.id === currentAssistantMessageIdRef.current 
+                  ? { ...msg, content: data.text }
+                  : msg
+              );
+            } else {
+              // Add new message
+              return [...prev, assistantMessage];
+            }
+          });
         }
         
         // Reset streaming content and refs after finalizing
         streamingContentRef.current = "";
-        currentAssistantMessageRef.current = null;
+        currentAssistantMessageIdRef.current = null;
       });
 
       // query_start is now sent by client, not received
@@ -135,22 +161,32 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         setIsLoading(false);
         
         // Update the assistant message with error
-        if (currentAssistantMessageRef.current) {
-          const errorMessage = "Sorry, there was an error processing your request. Please try again.";
-          currentAssistantMessageRef.current.content = errorMessage;
-          
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === currentAssistantMessageRef.current?.id 
-                ? { ...msg, content: errorMessage }
-                : msg
-            )
-          );
+        const errorMessage = "Sorry, there was an error processing your request. Please try again.";
+        if (currentAssistantMessageIdRef.current) {
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === currentAssistantMessageIdRef.current);
+            
+            if (!messageExists && currentAssistantMessageIdRef.current) {
+              const assistantMessage: ChatMessage = {
+                id: currentAssistantMessageIdRef.current,
+                role: "assistant",
+                content: errorMessage,
+                timestamp: new Date(),
+              };
+              return [...prev, assistantMessage];
+            } else {
+              return prev.map(msg => 
+                msg.id === currentAssistantMessageIdRef.current 
+                  ? { ...msg, content: errorMessage }
+                  : msg
+              );
+            }
+          });
         }
         
         // Reset streaming content and refs
         streamingContentRef.current = "";
-        currentAssistantMessageRef.current = null;
+        currentAssistantMessageIdRef.current = null;
       });
 
       // Repository room events (simplified)
@@ -193,7 +229,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
       
       // Reset all refs on cleanup
       streamingContentRef.current = "";
-      currentAssistantMessageRef.current = null;
+      currentAssistantMessageIdRef.current = null;
     };
   }, [serverUrl]);
 
@@ -206,25 +242,25 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         return;
       }
 
+      // Generate unique IDs using timestamp + random component
+      const baseId = Date.now();
       const userMessage: ChatMessage = {
-        id: Date.now().toString(),
+        id: `${baseId}-user-${Math.random().toString(36).substr(2, 9)}`,
         role: "user",
         content: content.trim(),
         timestamp: new Date(),
       };
 
-      // Create placeholder assistant message for streaming
-      const assistantMessage: ChatMessage = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-      };
+      // Generate assistant message ID for streaming
+      const assistantMessageId = `${baseId}-assistant-${Math.random().toString(36).substr(2, 9)}`;
+      console.log("🚀 Generated assistant message ID:", assistantMessageId);
 
-      setMessages(prev => [...prev, userMessage, assistantMessage]);
+      // Add user message and set up for streaming
+      setMessages(prev => [...prev, userMessage]);
       setCurrentMessage("");
       setIsLoading(true);
-      currentAssistantMessageRef.current = assistantMessage;
+      currentAssistantMessageIdRef.current = assistantMessageId;
+      console.log("🚀 Set currentAssistantMessageIdRef.current to:", currentAssistantMessageIdRef.current);
 
       setStreamingState(prev => ({
         ...prev,
@@ -282,22 +318,32 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         }));
 
         // Update the assistant message with error
-        if (currentAssistantMessageRef.current) {
-          const errorMessage = "Sorry, there was an error processing your request. Please try again.";
-          currentAssistantMessageRef.current.content = errorMessage;
-          
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === currentAssistantMessageRef.current?.id 
-                ? { ...msg, content: errorMessage }
-                : msg
-            )
-          );
+        const errorMessage = "Sorry, there was an error processing your request. Please try again.";
+        if (currentAssistantMessageIdRef.current) {
+          setMessages(prev => {
+            const messageExists = prev.some(msg => msg.id === currentAssistantMessageIdRef.current);
+            
+            if (!messageExists && currentAssistantMessageIdRef.current) {
+              const assistantMessage: ChatMessage = {
+                id: currentAssistantMessageIdRef.current,
+                role: "assistant",
+                content: errorMessage,
+                timestamp: new Date(),
+              };
+              return [...prev, assistantMessage];
+            } else {
+              return prev.map(msg => 
+                msg.id === currentAssistantMessageIdRef.current 
+                  ? { ...msg, content: errorMessage }
+                  : msg
+              );
+            }
+          });
         }
         
         // Reset streaming content and refs
         streamingContentRef.current = "";
-        currentAssistantMessageRef.current = null;
+        currentAssistantMessageIdRef.current = null;
       }
     },
     [isLoading, streamingState.isConnected, streamingState.socketId, repoId, mode, serverUrl]
@@ -313,7 +359,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
     
     // Reset all refs
     streamingContentRef.current = "";
-    currentAssistantMessageRef.current = null;
+    currentAssistantMessageIdRef.current = null;
   }, []);
 
   const handleKeyPress = useCallback(
