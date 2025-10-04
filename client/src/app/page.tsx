@@ -349,7 +349,6 @@ export default function EnhancedLanding() {
           </div>
         </div>
       </main>
-      Key Changes Made
 
       <style jsx>{`
         @keyframes float {
