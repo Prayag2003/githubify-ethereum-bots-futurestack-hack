@@ -21,10 +21,10 @@ export default function EnhancedLanding() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const companies = [
-    '"Code smarter, not harder" - GitHub',
-    '"Ship faster with AI" - Vercel',
-    '"Build the future" - Linear',
-    '"Make it work, make it right" - Stripe'
+    { text: '"Ship faster with AI" - Vercel', img: null },
+    { text: '"Powered by LLaMA"', img: '/assets/llama.png' },
+    { text: '"Powered by Cerebras"', img: '/assets/cerebras.png' },
+    { text: '"Containerized with Docker"', img: '/assets/docker.png' }
   ];
 
   const features = [
@@ -37,15 +37,15 @@ export default function EnhancedLanding() {
       bgColor: 'bg-gradient-to-br from-purple-500/20 to-pink-500/20',
       action: 'chat'
     },
-    {
-      id: 'explore',
-      icon: GitBranch,
-      title: 'Explore Tree',
-      description: 'Navigate through your codebase structure',
-      color: 'from-blue-500 to-cyan-500',
-      bgColor: 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20',
-      action: 'explore'
-    },
+    // {
+    //   id: 'explore',
+    //   icon: GitBranch,
+    //   title: 'Explore Tree',
+    //   description: 'Navigate through your codebase structure',
+    //   color: 'from-blue-500 to-cyan-500',
+    //   bgColor: 'bg-gradient-to-br from-blue-500/20 to-cyan-500/20',
+    //   action: 'explore'
+    // },
     {
       id: 'visualize',
       icon: Eye,
@@ -222,55 +222,66 @@ export default function EnhancedLanding() {
         </div>
       </header>
 
+
+
       <main className="relative z-10 flex-1 flex items-center justify-center px-8 pb-8">
         <div className="text-center max-w-5xl mx-auto w-full">
-          <div className="mb-10">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full mb-6 backdrop-blur-sm hover:bg-purple-500/20 transition-all duration-300 cursor-pointer group">
-              <Sparkles className="w-4 h-4 text-purple-400 group-hover:rotate-180 transition-transform duration-500" />
+          <div className="mb-6">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-purple-500/10 border border-purple-500/30 rounded-full mb-4 backdrop-blur-sm">
+              <Sparkles className="w-4 h-4 text-purple-400" />
               <span className="text-sm text-purple-300">Elevate your code understanding</span>
             </div>
 
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-5 tracking-tight leading-tight">
-              Don't just be a{' '}
-              <span className="bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent animate-gradient inline-block hover:scale-110 transition-transform duration-300 cursor-default">
-                Vibe Coder
+            {/* Adjusted Headings */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-2 tracking-tight leading-tight">
+              <span className="bg-gradient-to-r from-purple-400 via-pink-600 to-purple-700 bg-clip-text text-transparent animate-gradient inline-block">
+                Don't just be a Vibe Coder
               </span>
             </h1>
 
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-light mb-5">
-              Be a{' '}
-              <span className="font-bold bg-gradient-to-r from-purple-600 via-purple-400 to-purple-600 bg-clip-text text-transparent">
-                better developer
+            <h2 className="text-3xl md:text-4xl lg:text-5xl font-light mb-1">
+              <span className="bg-gradient-to-r from-purple-600 via-purple-400 to-pink-500 bg-clip-text text-transparent animate-gradient">
+                Be a Better Developer
               </span>
             </h2>
 
-            <div className="h-8 mb-8 overflow-hidden">
-              <div
-                className="transition-transform duration-500 ease-in-out"
-                style={{ transform: `translateY(-${currentCompany * 32}px)` }}
-              >
+            <h3 className="text-2xl md:text-3xl lg:text-4xl font-extrabold mb-4 tracking-tight leading-tight">
+              <span className="bg-gradient-to-r from-purple-400 via-blue-500 to-cyan-600 bg-clip-text text-transparent animate-gradient inline-block">
+                Understand Your Codebases
+              </span>
+            </h3>
+
+            {/* Subtext and "Powered by" Section */}
+            <p className="text-md md:text-lg text-gray-400 font-medium mb-6 animate-slide-in">
+              Ask questions, visualize architecture, and explore like never before.
+            </p>
+
+            <div className="h-6 mb-6 overflow-hidden">
+              <div className="transition-transform duration-500 ease-in-out" style={{ transform: `translateY(-${currentCompany * 24}px)` }}>
                 {companies.map((company, index) => (
-                  <p key={index} className="text-lg text-gray-400 font-light h-8 flex items-center justify-center italic">
-                    {company}
-                  </p>
+                  <div key={index} className="h-6 flex items-center justify-center gap-2">
+                    {company.img && (
+                      <img src={company.img} alt="logo" className="h-5 w-auto object-contain" />
+                    )}
+                    <p className="text-sm text-gray-400 font-light italic">
+                      {company.text}
+                    </p>
+                  </div>
                 ))}
               </div>
             </div>
           </div>
 
-          <div className="max-w-2xl mx-auto mb-6">
-            <div className={`relative group transition-all duration-300 ${isFocused ? 'scale-[1.02]' : ''}`}>
-              <div className={`absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 blur-lg transition-all duration-500 ${isFocused ? 'opacity-75 blur-xl' : ''}`} />
+          <div className="max-w-xl mx-auto mb-4">
+            <div className="relative group transition-all duration-300">
+              <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 via-pink-600 to-purple-600 rounded-2xl opacity-0 group-hover:opacity-100 blur-lg transition-all duration-500" />
               <div className="relative">
                 <input
                   type="text"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
                   placeholder="github.com/owner/repository"
-                  disabled={isLoading}
-                  className="w-full px-6 py-4 bg-gray-900/80 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 transition-all duration-300 text-base disabled:opacity-50"
+                  className="w-full px-6 py-3 bg-gray-900/80 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder-gray-500 focus:outline-none focus:border-purple-500/50 text-base"
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
                   {isValid && !isLoading && (
@@ -285,77 +296,31 @@ export default function EnhancedLanding() {
             </div>
           </div>
 
+          {/* Error and Loading States */}
           {error && (
-            <div className="max-w-2xl mx-auto mb-6 p-4 bg-red-900/20 border border-red-500/30 rounded-xl backdrop-blur-sm animate-scale-in">
+            <div className="max-w-xl mx-auto mb-4 p-3 bg-red-900/20 border border-red-500/30 rounded-xl animate-scale-in">
               <div className="flex items-start gap-3">
-                <div className="flex-shrink-0 mt-0.5">
-                  <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center">
-                    <span className="text-red-400 text-xs font-bold">!</span>
-                  </div>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-red-400 font-semibold text-sm mb-1">Processing Failed</h3>
-                  <p className="text-red-300/80 text-xs mb-2">{error}</p>
-                </div>
-                <button onClick={clearError} className="text-red-400 hover:text-red-300 transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex-shrink-0 mt-0.5"><span className="text-red-400 text-xs font-bold">!</span></div>
+                <div className="flex-1"><p className="text-red-300/80 text-xs">{error}</p></div>
+                <button onClick={clearError}><X className="w-4 h-4 text-red-400" /></button>
               </div>
             </div>
           )}
 
           {isLoading && (
-            <div className="max-w-2xl mx-auto mb-6 relative">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-xl blur-xl animate-pulse"></div>
-              <div className="relative p-5 bg-gradient-to-br from-blue-900/40 via-purple-900/40 to-blue-900/40 border border-blue-500/40 rounded-xl backdrop-blur-sm animate-scale-in">
-                <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 relative">
-                    <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-400 border-t-transparent"></div>
-                    <div className="absolute inset-0 rounded-full bg-blue-400/20 animate-ping"></div>
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <p className="font-bold text-base bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">
-                        {actionType === 'chat' ? '🚀 Preparing Your Chat Experience' :
-                          actionType === 'visualize' ? '🎨 Generating Architecture View' :
-                            actionType === 'explore' ? '🌳 Building Code Explorer' :
-                              '⚡ Processing Repository'}
-                      </p>
-                      <div className="flex gap-1">
-                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-1.5 h-1.5 bg-pink-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 text-xs text-blue-200 bg-blue-500/10 rounded-lg p-2 border border-blue-500/20 animate-slide-in">
-                        <div className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse"></div>
-                        <span className="font-medium">Cloning repository from GitHub</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-purple-200 bg-purple-500/10 rounded-lg p-2 border border-purple-500/20 animate-slide-in" style={{ animationDelay: '200ms' }}>
-                        <div className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" style={{ animationDelay: '200ms' }}></div>
-                        <span className="font-medium">Analyzing code structure & dependencies</span>
-                      </div>
-                      <div className="flex items-center gap-3 text-xs text-pink-200 bg-pink-500/10 rounded-lg p-2 border border-pink-500/20 animate-slide-in" style={{ animationDelay: '400ms' }}>
-                        <div className="w-1.5 h-1.5 bg-pink-400 rounded-full animate-pulse" style={{ animationDelay: '400ms' }}></div>
-                        <span className="font-medium">Building AI-powered knowledge base</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-3 flex items-center gap-2 text-xs">
-                      <div className="h-1 flex-1 bg-blue-900/50 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-progress"></div>
-                      </div>
-                      <span className="text-blue-300/60 font-mono">~45s</span>
-                    </div>
-                  </div>
-                </div>
+            <div className="max-w-xl mx-auto mb-4 p-4 bg-gradient-to-br from-blue-900/40 via-purple-900/40 to-blue-900/40 border border-blue-500/40 rounded-xl animate-scale-in">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="animate-spin rounded-full h-6 w-6 border-2 border-blue-400 border-t-transparent"></div>
+                <p className="font-bold text-sm bg-gradient-to-r from-blue-300 to-purple-300 bg-clip-text text-transparent">Processing Repository...</p>
+              </div>
+              <div className="h-1 bg-blue-900/50 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full animate-progress"></div>
               </div>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
+          {/* Feature Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-xl mx-auto">
             {features.map((feature, index) => (
               <button
                 key={feature.id}
@@ -363,52 +328,28 @@ export default function EnhancedLanding() {
                 onClick={() => handleAction(feature.action as any)}
                 onMouseEnter={() => setHoveredCard(index)}
                 onMouseLeave={() => setHoveredCard(null)}
-                className={`group relative overflow-hidden ${feature.bgColor} backdrop-blur-sm border-2 rounded-2xl p-6 transition-all duration-500 disabled:opacity-40 disabled:cursor-not-allowed ${isValid && !isLoading ? 'hover:scale-105 hover:shadow-2xl cursor-pointer border-white/20 hover:border-white/40' : 'border-white/10'
+                className={`group relative overflow-hidden ${feature.bgColor} backdrop-blur-sm border-2 rounded-2xl p-4 transition-all duration-500 disabled:opacity-40 disabled:cursor-not-allowed ${isValid && !isLoading ? 'hover:scale-105 hover:shadow-2xl cursor-pointer border-white/20 hover:border-white/40' : 'border-white/10'
                   }`}
-                style={{
-                  animationDelay: `${index * 0.1}s`,
-                  transform: hoveredCard === index && !isLoading ? 'translateY(-8px)' : 'translateY(0)'
-                }}
               >
-                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-4 transition-all duration-500 ${hoveredCard === index && !isLoading ? 'scale-110 rotate-12' : 'scale-100 rotate-0'
-                  }`}>
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-3 transition-all duration-500 ${hoveredCard === index && !isLoading ? 'scale-110' : 'scale-100'}`}>
                   {isLoading && actionType === feature.action ? (
-                    <div className="animate-spin rounded-full h-7 w-7 border-2 border-white border-t-transparent"></div>
+                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
                   ) : (
-                    <feature.icon className="w-7 h-7 text-white" />
+                    <feature.icon className="w-5 h-5 text-white" />
                   )}
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-300 mb-4">{feature.description}</p>
-                <div className={`flex items-center gap-2 text-sm font-medium transition-all duration-300 ${isValid && !isLoading ? 'text-white' : 'text-gray-500'
-                  }`}>
+                <h3 className="text-md font-bold text-white mb-1">{feature.title}</h3>
+                <p className="text-xs text-gray-300 mb-3">{feature.description}</p>
+                <div className={`flex items-center gap-1 text-xs font-medium transition-all duration-300 ${isValid && !isLoading ? 'text-white' : 'text-gray-500'}`}>
                   {isLoading && actionType === feature.action ? 'Processing...' : 'Start now'}
-                  <ArrowRight className={`w-4 h-4 transition-transform duration-300 ${hoveredCard === index && !isLoading ? 'translate-x-2' : 'translate-x-0'
-                    }`} />
+                  <ArrowRight className={`w-3 h-3 transition-transform duration-300 ${hoveredCard === index && !isLoading ? 'translate-x-1' : 'translate-x-0'}`} />
                 </div>
-                <div className={`absolute inset-0 bg-gradient-to-r ${feature.color} opacity-0 transition-opacity duration-500 ${hoveredCard === index && !isLoading ? 'opacity-20' : 'opacity-0'
-                  }`} />
-
-                {hoveredCard === index && isValid && !isLoading && (
-                  <div className="absolute inset-0 pointer-events-none">
-                    {[...Array(6)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="absolute w-1 h-1 bg-white rounded-full animate-sparkle"
-                        style={{
-                          left: `${Math.random() * 100}%`,
-                          top: `${Math.random() * 100}%`,
-                          animationDelay: `${i * 0.1}s`
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
               </button>
             ))}
           </div>
         </div>
       </main>
+      Key Changes Made
 
       <style jsx>{`
         @keyframes float {
@@ -470,6 +411,6 @@ export default function EnhancedLanding() {
           animation: progress 45s linear forwards;
         }
       `}</style>
-    </div>
+    </div >
   );
 }
