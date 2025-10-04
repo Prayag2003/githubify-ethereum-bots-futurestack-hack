@@ -80,16 +80,10 @@ class TreeService {
   /**
    * Fetch file tree data for a repository
    */
-  async getFileTree(githubUrl: string): Promise<FileNode[]> {
+  async getFileTree(): Promise<FileNode[]> {
     try {
       const response = await fetch(`${this.baseUrl}/tree/code-tree`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          github_url: githubUrl
-        }),
+        method: 'GET',
       });
 
       if (!response.ok) {
