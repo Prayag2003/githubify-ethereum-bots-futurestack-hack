@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Codebase AI",
+  title: "Githubify AI",
   description: "Understand Any GitHub Repo in Minutes",
 };
 

@@ -105,7 +105,7 @@ export function ChatSidebar({
         </div>
         <div className="mt-4 sm:mt-6">
           <div className="text-xs sm:text-sm text-gray-400 mb-2 sm:mb-3 font-light">
-            Repository
+            Repository Hash
           </div>
           <div className="text-xs sm:text-sm font-mono bg-white/5 border border-white/10 px-2 sm:px-3 py-1 sm:py-2 rounded-lg text-gray-300 break-all">
             {currentRepo || "github.com/owner/project"}
@@ -160,19 +160,17 @@ export function ChatSidebar({
                 <button
                   key={chat.id}
                   onClick={() => onHistoryItemClick(chat.id)}
-                  className={`w-full text-left p-3 sm:p-4 rounded-xl transition-all duration-300 group border ${
-                    isActive
+                  className={`w-full text-left p-3 sm:p-4 rounded-xl transition-all duration-300 group border ${isActive
                       ? "bg-purple-500/20 border-purple-500/30"
                       : "border-transparent hover:border-white/10 hover:bg-white/5"
-                  }`}
+                    }`}
                   aria-label={`Open chat: ${chat.title}`}
                 >
                   <div
-                    className={`text-xs sm:text-sm font-medium transition-colors truncate ${
-                      isActive
+                    className={`text-xs sm:text-sm font-medium transition-colors truncate ${isActive
                         ? "text-purple-300"
                         : "text-white group-hover:text-purple-300"
-                    }`}
+                      }`}
                   >
                     {chat.title}
                   </div>

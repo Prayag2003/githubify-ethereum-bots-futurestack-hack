@@ -77,6 +77,9 @@ function ChatContent() {
         currentChatId={currentChatId}
         onNewChat={startNewChat}
         onNavigateToVisualize={() =>
+          navigateToVisualize(repoData?.repo_id || currentRepo || "github.com/owner/project")
+        }
+        onNavigateToVisualize={() =>
           navigateToVisualize(
             repoData?.repo_id || currentRepo || "github.com/owner/project"
           )
@@ -92,7 +95,7 @@ function ChatContent() {
         <header className="bg-white/5 backdrop-blur-sm border-b border-white/10 p-6 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
             <span className="text-xl font-light tracking-wide">
-              Codebase AI
+              Githubify AI
             </span>
             {repoData && (
               <div className="flex items-center gap-2 text-sm text-white/70">
@@ -106,11 +109,8 @@ function ChatContent() {
             {/* Connection Status */}
             <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-2">
-                <div
-                  className={`w-2 h-2 rounded-full ${
-                    isConnected ? "bg-green-500" : "bg-red-500"
-                  }`}
-                />
+                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'
+                  }`} />
                 <span className="text-white/70">
                   {isConnected ? "Connected" : "Disconnected"}
                 </span>

@@ -1,5 +1,5 @@
 /**
- * Shared types and interfaces for the Codebase AI application
+ * Shared types and interfaces for the Githubify AI application
  * Following SOLID principles with clear separation of concerns
  * Following KISS principle - only essential types
  */
