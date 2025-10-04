@@ -173,17 +173,6 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
       }));
       setIsLoading(false);
 
-      // Simple approach: always add the message
-      const assistantMessage: ChatMessage = {
-        id: `complete-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        role: "assistant",
-        content: data.text,
-        timestamp: new Date(),
-      };
-      
-      console.log("✅ Adding query_complete message:", assistantMessage);
-      setMessages(prev => [...prev, assistantMessage]);
-
       // Reset global active message if this was the active one
       if (globalActiveMessageId === currentAssistantMessageIdRef.current) {
         globalActiveMessageId = null;

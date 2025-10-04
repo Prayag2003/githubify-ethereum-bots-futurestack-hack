@@ -9,7 +9,7 @@ import { useChat } from "@/hooks/useChat";
 import { useNavigation } from "@/hooks/useNavigation";
 import { useSearchParamsData } from "@/hooks/useSearchParams";
 import { LocalStorageService } from "@/services/localStorageService";
-import { mockChatHistory } from "@/services/mockData";
+// import { mockChatHistory } from "@/services/mockData";
 import { ChatHistory } from "@/types";
 import { Send, GitBranch } from "lucide-react";
 import { Suspense, useState, useEffect } from "react";
@@ -18,7 +18,8 @@ function ChatContent() {
   const { currentRepo } = useSearchParamsData();
   const { navigateToVisualize, navigateToHome } = useNavigation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [chatHistory] = useState<ChatHistory[]>(mockChatHistory);
+  // const [chatHistory] = useState<ChatHistory[]>(mockChatHistory);
+  const [chatHistory] = useState<ChatHistory[]>([]);
   const [repoData, setRepoData] = useState<{
     repo_id: string;
     github_url: string;
@@ -88,7 +89,7 @@ function ChatContent() {
       <div className="flex-1 flex flex-col h-screen">
         {/* Minimalistic Header - Fixed */}
         <header className="bg-white/5 backdrop-blur-sm border-b border-white/10 p-6 flex items-center justify-between flex-shrink-0">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span className="text-xl font-light tracking-wide">
               Githubify AI
             </span>
@@ -110,15 +111,15 @@ function ChatContent() {
                   {isConnected ? "Connected" : "Disconnected"}
                 </span>
               </div>
-              {isStreaming && (
+              {/* {isStreaming && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                   <span className="text-blue-400">Streaming</span>
                 </div>
-              )}
-              {repoId && (
+              )} */}
+              {/* {repoId && (
                 <span className="text-white/50 text-xs">{mode} mode</span>
-              )}
+              )} */}
             </div>
           </div>
         </header>

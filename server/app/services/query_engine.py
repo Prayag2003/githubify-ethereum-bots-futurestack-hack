@@ -330,7 +330,7 @@ async def handle_query_stream(repo_id: str, query: str, mode: str = "fast", sock
             msg = "No relevant code found in this repository."
             if socket_id and sio is not None:
                 logger.info(f"📤 Emitting query_complete to socket {socket_id}: {msg}")
-                await sio.emit("query_complete", {"text": msg}, to=socket_id)
+                await sio.emit("query_chunk", {"text": msg}, to=socket_id)
                 logger.info(f"✅ Successfully emitted query_complete to socket {socket_id}")
             else:
                 logger.warning(f"⚠️ Cannot emit query_complete: socket_id={socket_id}, sio={sio is not None}")
@@ -361,7 +361,7 @@ async def handle_query_stream(repo_id: str, query: str, mode: str = "fast", sock
             logger.info(f"Stream chunk: {delta.strip()}")
 
         if socket_id and sio:
-            await sio.emit("query_complete", {"text": full_text}, to=socket_id)
+            await sio.emit("query_complete", {"text": "query complete"}, to=socket_id)
 
         logger.info("Streaming query completed successfully.")
         return full_text
