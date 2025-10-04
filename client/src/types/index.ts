@@ -1,19 +1,10 @@
 /**
  * Shared types and interfaces for the Codebase AI application
  * Following SOLID principles with clear separation of concerns
+ * Following KISS principle - only essential types
  */
 
 // Core domain types
-export interface GitHubRepo {
-  id: string;
-  name: string;
-  url: string;
-  owner: string;
-  repo: string;
-  fullName: string;
-  lastAccessed: Date;
-}
-
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
@@ -61,10 +52,6 @@ export interface HeaderProps {
   showBeta?: boolean;
   className?: string;
 }
-
-// Navigation types
-export type PageRoute = "home" | "chat" | "visualize";
-export type VisualizeTab = "tree" | "architecture";
 
 // Service types
 export interface ApiResponse<T> {
