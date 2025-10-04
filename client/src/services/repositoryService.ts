@@ -38,6 +38,54 @@ export class RepositoryService {
     this.baseUrl = config.baseUrl;
   }
 
+  // Add this to your repositoryService.ts
+
+  /**
+   * Generate diagram for a repository
+   * @param repoId - Repository ID (can be GitHub URL or repo_id)
+   * @returns Promise with diagram data
+   */
+  async generateDiagram(
+    repoId: string
+  ): Promise<ApiResponse<{ diagram: string }>> {
+    try {
+      const response = await fetch(
+        `${this.baseUrl}/diagram/diagram?repo_id=${encodeURIComponent(repoId)}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.status === "success") {
+        return {
+          data: result.data,
+          success: true,
+          message: result.message,
+        };
+      } else {
+        return {
+          data: { diagram: "" },
+          success: false,
+          error: result.message || `Server error: ${response.status}`,
+          message: result.message,
+        };
+      }
+    } catch (error) {
+      console.error("Diagram generation error:", error);
+      return {
+        data: { diagram: "" },
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Network error occurred",
+      };
+    }
+  }
+
   /**
    * Clone and ingest a repository
    * @param githubUrl - GitHub repository URL
