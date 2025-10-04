@@ -303,7 +303,7 @@ const DiagramViewerInner: React.FC = () => {
   const [isCompact, setIsCompact] = useState<boolean>(false);
   const [showSimplified, setShowSimplified] = useState<boolean>(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['all']);
-  const { fitView, setCenter, zoomIn, zoomOut } = useReactFlow();
+  const { setCenter, zoomIn, zoomOut } = useReactFlow();
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentRepo = searchParams.get("repo");
@@ -411,7 +411,7 @@ const DiagramViewerInner: React.FC = () => {
       );
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
-      setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 50);
+      // setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 50);
     }
   }, [filteredData, isDark, layout, isCompact]);
 
@@ -524,7 +524,6 @@ const DiagramViewerInner: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
-        fitView
         minZoom={0.1}
         maxZoom={2}
       >
