@@ -13,12 +13,12 @@ interface UseChatOptions {
  */
 export function useChat(options: UseChatOptions = {}) {
   const { repoId, mode = "accurate" } = options;
-  
+
   // Always use streaming chat since repository is always available from home page
   const streamingChat = useStreamingChat({
     repoId,
     mode,
-    serverUrl: process.env.NEXT_PUBLIC_SERVER_URL
+    serverUrl: process.env.NEXT_PUBLIC_SERVER_URL,
   });
 
   // Auto-join repository when connected and repoId is available
@@ -26,7 +26,12 @@ export function useChat(options: UseChatOptions = {}) {
     if (streamingChat.isConnected && repoId && streamingChat.socketId) {
       streamingChat.joinRepository(repoId);
     }
-  }, [streamingChat.isConnected, repoId, streamingChat.socketId, streamingChat.joinRepository]);
+  }, [
+    streamingChat.isConnected,
+    repoId,
+    streamingChat.socketId,
+    streamingChat.joinRepository,
+  ]);
 
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
 
@@ -62,17 +67,17 @@ export function useChat(options: UseChatOptions = {}) {
     startNewChat,
     loadChat,
     handleKeyPress,
-    
+
     // Streaming-specific properties
     isConnected: streamingChat.isConnected,
     isStreaming: streamingChat.isStreaming,
     socketId: streamingChat.socketId,
     streamingState: streamingChat.streamingState,
-    
+
     // Repository management
     joinRepository: streamingChat.joinRepository,
     leaveRepository: streamingChat.leaveRepository,
-    
+
     // Repository info
     repoId,
     mode,

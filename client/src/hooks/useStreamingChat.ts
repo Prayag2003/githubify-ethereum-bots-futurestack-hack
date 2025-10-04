@@ -23,10 +23,14 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
   const {
     serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8000",
     repoId,
-    mode = "fast"
+    mode = "fast",
   } = options;
-  
-  console.log("🔧 useStreamingChat initialized with:", { serverUrl, repoId, mode });
+
+  console.log("🔧 useStreamingChat initialized with:", {
+    serverUrl,
+    repoId,
+    mode,
+  });
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState("");
@@ -35,13 +39,12 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
     isConnected: false,
     isStreaming: false,
     currentStreamingMessage: "",
-    socketId: null
+    socketId: null,
   });
 
   const socketRef = useRef<Socket | null>(null);
   const currentAssistantMessageIdRef = useRef<string | null>(null);
   const streamingContentRef = useRef<string>("");
-
 
   useEffect(() => {
     if (!socketRef.current) {
@@ -52,7 +55,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         autoConnect: true,
         reconnection: true,
         reconnectionAttempts: 5,
-        reconnectionDelay: 1000
+        reconnectionDelay: 1000,
       });
 
       const socket = socketRef.current;
@@ -63,7 +66,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         setStreamingState(prev => ({
           ...prev,
           isConnected: true,
-          socketId: socket.id || null
+          socketId: socket.id || null,
         }));
       });
 
@@ -72,22 +75,24 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         setStreamingState(prev => ({
           ...prev,
           isConnected: false,
-          socketId: null
+          socketId: null,
         }));
       });
 
       // Streaming events - direct approach
       socket.on("query_chunk", (data: { text: string }) => {
         console.log("📝 Received query chunk:", data.text);
-        
+
         // Accumulate streaming content
         streamingContentRef.current += data.text;
-        
+
         // Add or update assistant message with current content
         if (currentAssistantMessageIdRef.current) {
           setMessages(prev => {
-            const messageExists = prev.some(msg => msg.id === currentAssistantMessageIdRef.current);
-            
+            const messageExists = prev.some(
+              msg => msg.id === currentAssistantMessageIdRef.current
+            );
+
             if (!messageExists && currentAssistantMessageIdRef.current) {
               const assistantMessage: ChatMessage = {
                 id: currentAssistantMessageIdRef.current,
@@ -97,8 +102,8 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
               };
               return [...prev, assistantMessage];
             } else {
-              return prev.map(msg => 
-                msg.id === currentAssistantMessageIdRef.current 
+              return prev.map(msg =>
+                msg.id === currentAssistantMessageIdRef.current
                   ? { ...msg, content: streamingContentRef.current }
                   : msg
               );
@@ -109,15 +114,18 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
 
       socket.on("query_complete", (data: { text: string }) => {
         console.log("✅ Query streaming complete:", data.text);
-        console.log("✅ currentAssistantMessageIdRef.current:", currentAssistantMessageIdRef.current);
-        
+        console.log(
+          "✅ currentAssistantMessageIdRef.current:",
+          currentAssistantMessageIdRef.current
+        );
+
         setStreamingState(prev => ({
           ...prev,
           isStreaming: false,
-          currentStreamingMessage: ""
+          currentStreamingMessage: "",
         }));
         setIsLoading(false);
-        
+
         // CRITICAL FIX: Add assistant message immediately
         if (currentAssistantMessageIdRef.current) {
           const assistantMessage: ChatMessage = {
@@ -126,15 +134,17 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
             content: data.text,
             timestamp: new Date(),
           };
-          
+
           console.log("✅ Adding assistant message:", assistantMessage);
           setMessages(prev => {
             // Check if message already exists
-            const messageExists = prev.some(msg => msg.id === currentAssistantMessageIdRef.current);
+            const messageExists = prev.some(
+              msg => msg.id === currentAssistantMessageIdRef.current
+            );
             if (messageExists) {
               // Update existing message
-              return prev.map(msg => 
-                msg.id === currentAssistantMessageIdRef.current 
+              return prev.map(msg =>
+                msg.id === currentAssistantMessageIdRef.current
                   ? { ...msg, content: data.text }
                   : msg
               );
@@ -144,7 +154,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
             }
           });
         }
-        
+
         // Reset streaming content and refs after finalizing
         streamingContentRef.current = "";
         currentAssistantMessageIdRef.current = null;
@@ -156,16 +166,19 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         console.error("Query error:", data.error);
         setStreamingState(prev => ({
           ...prev,
-          isStreaming: false
+          isStreaming: false,
         }));
         setIsLoading(false);
-        
+
         // Update the assistant message with error
-        const errorMessage = "Sorry, there was an error processing your request. Please try again.";
+        const errorMessage =
+          "Sorry, there was an error processing your request. Please try again.";
         if (currentAssistantMessageIdRef.current) {
           setMessages(prev => {
-            const messageExists = prev.some(msg => msg.id === currentAssistantMessageIdRef.current);
-            
+            const messageExists = prev.some(
+              msg => msg.id === currentAssistantMessageIdRef.current
+            );
+
             if (!messageExists && currentAssistantMessageIdRef.current) {
               const assistantMessage: ChatMessage = {
                 id: currentAssistantMessageIdRef.current,
@@ -175,15 +188,15 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
               };
               return [...prev, assistantMessage];
             } else {
-              return prev.map(msg => 
-                msg.id === currentAssistantMessageIdRef.current 
+              return prev.map(msg =>
+                msg.id === currentAssistantMessageIdRef.current
                   ? { ...msg, content: errorMessage }
                   : msg
               );
             }
           });
         }
-        
+
         // Reset streaming content and refs
         streamingContentRef.current = "";
         currentAssistantMessageIdRef.current = null;
@@ -194,28 +207,28 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         console.log("Joined repository:", data.message);
       });
 
-      socket.on("connect_error", (error) => {
+      socket.on("connect_error", error => {
         console.error("❌ Socket connection error:", error);
         setStreamingState(prev => ({
           ...prev,
-          isConnected: false
+          isConnected: false,
         }));
       });
 
-      socket.on("reconnect", (attemptNumber) => {
+      socket.on("reconnect", attemptNumber => {
         console.log("🔄 Socket reconnected after", attemptNumber, "attempts");
         setStreamingState(prev => ({
           ...prev,
           isConnected: true,
-          socketId: socket.id || null
+          socketId: socket.id || null,
         }));
       });
 
-      socket.on("reconnect_attempt", (attemptNumber) => {
+      socket.on("reconnect_attempt", attemptNumber => {
         console.log("🔄 Socket reconnection attempt", attemptNumber);
       });
 
-      socket.on("reconnect_error", (error) => {
+      socket.on("reconnect_error", error => {
         console.error("❌ Socket reconnection error:", error);
       });
     }
@@ -226,7 +239,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         socketRef.current.disconnect();
         socketRef.current = null;
       }
-      
+
       // Reset all refs on cleanup
       streamingContentRef.current = "";
       currentAssistantMessageIdRef.current = null;
@@ -235,10 +248,26 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
 
   const sendMessage = useCallback(
     async (content: string) => {
-      console.log("🚀 sendMessage called with:", { content, isLoading, isConnected: streamingState.isConnected, repoId, socketId: streamingState.socketId });
-      
-      if (!content.trim() || isLoading || !streamingState.isConnected || !repoId) {
-        console.log("❌ sendMessage blocked:", { hasContent: !!content.trim(), isLoading, isConnected: streamingState.isConnected, hasRepoId: !!repoId });
+      console.log("🚀 sendMessage called with:", {
+        content,
+        isLoading,
+        isConnected: streamingState.isConnected,
+        repoId,
+        socketId: streamingState.socketId,
+      });
+
+      if (
+        !content.trim() ||
+        isLoading ||
+        !streamingState.isConnected ||
+        !repoId
+      ) {
+        console.log("❌ sendMessage blocked:", {
+          hasContent: !!content.trim(),
+          isLoading,
+          isConnected: streamingState.isConnected,
+          hasRepoId: !!repoId,
+        });
         return;
       }
 
@@ -260,14 +289,17 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
       setCurrentMessage("");
       setIsLoading(true);
       currentAssistantMessageIdRef.current = assistantMessageId;
-      console.log("🚀 Set currentAssistantMessageIdRef.current to:", currentAssistantMessageIdRef.current);
+      console.log(
+        "🚀 Set currentAssistantMessageIdRef.current to:",
+        currentAssistantMessageIdRef.current
+      );
 
       setStreamingState(prev => ({
         ...prev,
         isStreaming: true,
-        currentStreamingMessage: ""
+        currentStreamingMessage: "",
       }));
-      
+
       // Reset streaming content
       streamingContentRef.current = "";
 
@@ -277,21 +309,21 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
           socketRef.current.emit("query_start", {
             repo_id: repoId,
             query: content.trim(),
-            mode: mode
+            mode: mode,
           });
           console.log("📤 Sent query_start event to server");
         }
-        
+
         const requestBody = {
           repo_id: repoId,
           query: content.trim(),
           mode: mode,
-          socket_id: streamingState.socketId
+          socket_id: streamingState.socketId,
         };
-        
+
         console.log("📤 Sending request to:", `${serverUrl}/query/`);
         console.log("📤 Request body:", requestBody);
-        
+
         const response = await fetch(`${serverUrl}/query/`, {
           method: "POST",
           headers: {
@@ -301,28 +333,30 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         });
 
         console.log("📥 Response status:", response.status);
-        
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const result = await response.json();
         console.log("✅ Query initiated successfully:", result);
-
       } catch (error) {
         console.error("Error sending message:", error);
         setIsLoading(false);
         setStreamingState(prev => ({
           ...prev,
-          isStreaming: false
+          isStreaming: false,
         }));
 
         // Update the assistant message with error
-        const errorMessage = "Sorry, there was an error processing your request. Please try again.";
+        const errorMessage =
+          "Sorry, there was an error processing your request. Please try again.";
         if (currentAssistantMessageIdRef.current) {
           setMessages(prev => {
-            const messageExists = prev.some(msg => msg.id === currentAssistantMessageIdRef.current);
-            
+            const messageExists = prev.some(
+              msg => msg.id === currentAssistantMessageIdRef.current
+            );
+
             if (!messageExists && currentAssistantMessageIdRef.current) {
               const assistantMessage: ChatMessage = {
                 id: currentAssistantMessageIdRef.current,
@@ -332,21 +366,28 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
               };
               return [...prev, assistantMessage];
             } else {
-              return prev.map(msg => 
-                msg.id === currentAssistantMessageIdRef.current 
+              return prev.map(msg =>
+                msg.id === currentAssistantMessageIdRef.current
                   ? { ...msg, content: errorMessage }
                   : msg
               );
             }
           });
         }
-        
+
         // Reset streaming content and refs
         streamingContentRef.current = "";
         currentAssistantMessageIdRef.current = null;
       }
     },
-    [isLoading, streamingState.isConnected, streamingState.socketId, repoId, mode, serverUrl]
+    [
+      isLoading,
+      streamingState.isConnected,
+      streamingState.socketId,
+      repoId,
+      mode,
+      serverUrl,
+    ]
   );
 
   const startNewChat = useCallback(() => {
@@ -354,9 +395,9 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
     setCurrentMessage("");
     setStreamingState(prev => ({
       ...prev,
-      currentStreamingMessage: ""
+      currentStreamingMessage: "",
     }));
-    
+
     // Reset all refs
     streamingContentRef.current = "";
     currentAssistantMessageIdRef.current = null;
@@ -372,67 +413,73 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
     [currentMessage, sendMessage]
   );
 
-  const joinRepository = useCallback(async (repoId: string) => {
-    if (!socketRef.current || !streamingState.isConnected) {
-      console.warn("Cannot join repository: socket not connected");
-      return false;
-    }
-
-    try {
-      const response = await fetch(`${serverUrl}/query/join-repo`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          socket_id: streamingState.socketId,
-          repo_id: repoId
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  const joinRepository = useCallback(
+    async (repoId: string) => {
+      if (!socketRef.current || !streamingState.isConnected) {
+        console.warn("Cannot join repository: socket not connected");
+        return false;
       }
 
-      const result = await response.json();
-      console.log("Joined repository:", result);
-      return true;
-    } catch (error) {
-      console.error("Error joining repository:", error);
-      return false;
-    }
-  }, [streamingState.isConnected, streamingState.socketId, serverUrl]);
+      try {
+        const response = await fetch(`${serverUrl}/query/join-repo`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            socket_id: streamingState.socketId,
+            repo_id: repoId,
+          }),
+        });
 
-  const leaveRepository = useCallback(async (repoId: string) => {
-    if (!socketRef.current || !streamingState.isConnected) {
-      console.warn("Cannot leave repository: socket not connected");
-      return false;
-    }
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-    try {
-      const response = await fetch(`${serverUrl}/query/leave-repo`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          socket_id: streamingState.socketId,
-          repo_id: repoId
-        }),
-      });
+        const result = await response.json();
+        console.log("Joined repository:", result);
+        return true;
+      } catch (error) {
+        console.error("Error joining repository:", error);
+        return false;
+      }
+    },
+    [streamingState.isConnected, streamingState.socketId, serverUrl]
+  );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+  const leaveRepository = useCallback(
+    async (repoId: string) => {
+      if (!socketRef.current || !streamingState.isConnected) {
+        console.warn("Cannot leave repository: socket not connected");
+        return false;
       }
 
-      const result = await response.json();
-      console.log("Left repository:", result);
-      return true;
-    } catch (error) {
-      console.error("Error leaving repository:", error);
-      return false;
-    }
-  }, [streamingState.isConnected, streamingState.socketId, serverUrl]);
+      try {
+        const response = await fetch(`${serverUrl}/query/leave-repo`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            socket_id: streamingState.socketId,
+            repo_id: repoId,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log("Left repository:", result);
+        return true;
+      } catch (error) {
+        console.error("Error leaving repository:", error);
+        return false;
+      }
+    },
+    [streamingState.isConnected, streamingState.socketId, serverUrl]
+  );
 
   const disconnect = useCallback(() => {
     if (socketRef.current) {
@@ -456,6 +503,6 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
     // Connection status helpers
     isConnected: streamingState.isConnected,
     isStreaming: streamingState.isStreaming,
-    socketId: streamingState.socketId
+    socketId: streamingState.socketId,
   };
 }

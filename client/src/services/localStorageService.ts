@@ -11,7 +11,7 @@ export interface RepositoryData {
   index_name?: string;
 }
 
-const REPO_DATA_KEY = 'codebase_ai_repo_data';
+const REPO_DATA_KEY = "codebase_ai_repo_data";
 
 /**
  * LocalStorage Service Class
@@ -26,11 +26,11 @@ export class LocalStorageService {
     try {
       const dataToStore = {
         ...repoData,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
       localStorage.setItem(REPO_DATA_KEY, JSON.stringify(dataToStore));
     } catch (error) {
-      console.error('Failed to store repository data:', error);
+      console.error("Failed to store repository data:", error);
     }
   }
 
@@ -44,7 +44,7 @@ export class LocalStorageService {
       if (!stored) return null;
 
       const repoData = JSON.parse(stored) as RepositoryData;
-      
+
       // Check if data is not too old (24 hours)
       const maxAge = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
       if (repoData.timestamp && Date.now() - repoData.timestamp > maxAge) {
@@ -54,7 +54,7 @@ export class LocalStorageService {
 
       return repoData;
     } catch (error) {
-      console.error('Failed to retrieve repository data:', error);
+      console.error("Failed to retrieve repository data:", error);
       return null;
     }
   }
@@ -84,7 +84,7 @@ export class LocalStorageService {
     try {
       localStorage.removeItem(REPO_DATA_KEY);
     } catch (error) {
-      console.error('Failed to clear repository data:', error);
+      console.error("Failed to clear repository data:", error);
     }
   }
 
@@ -108,12 +108,12 @@ export class LocalStorageService {
         const updatedData = {
           ...existingData,
           ...updates,
-          timestamp: Date.now()
+          timestamp: Date.now(),
         };
         this.setRepositoryData(updatedData);
       }
     } catch (error) {
-      console.error('Failed to update repository data:', error);
+      console.error("Failed to update repository data:", error);
     }
   }
 }

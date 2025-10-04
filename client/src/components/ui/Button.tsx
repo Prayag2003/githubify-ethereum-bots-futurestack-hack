@@ -21,7 +21,8 @@ export function Button({
       "bg-purple-600 hover:bg-purple-500 text-white shadow-lg hover:shadow-purple-500/30",
     secondary:
       "bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-white/30",
-    ghost: "bg-white/5 text-gray-500 cursor-not-allowed border border-white/10",
+    ghost:
+      "bg-white/5 hover:bg-white/10 text-white/70 hover:text-white border border-white/10 hover:border-white/20",
   };
 
   const sizeStyles = {
@@ -30,7 +31,7 @@ export function Button({
     lg: "px-8 py-4 text-lg",
   };
 
-  const isDisabled = disabled || variant === "ghost";
+  const isDisabled = disabled;
 
   return (
     <button

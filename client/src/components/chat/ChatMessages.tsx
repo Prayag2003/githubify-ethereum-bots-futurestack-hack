@@ -37,9 +37,11 @@ export function ChatMessages({ messages, isLoading }: ChatMessagesProps) {
 
   return (
     <div className="space-y-6">
-      {messages.filter(message => message != null).map(message => (
-        <MessageBubble key={message.id} message={message} />
-      ))}
+      {messages
+        .filter(message => message != null)
+        .map(message => (
+          <MessageBubble key={message.id} message={message} />
+        ))}
 
       {isLoading && (
         <div className="flex gap-4 justify-start">

@@ -11,7 +11,7 @@ import { useSearchParamsData } from "@/hooks/useSearchParams";
 import { LocalStorageService } from "@/services/localStorageService";
 import { mockChatHistory } from "@/services/mockData";
 import { ChatHistory } from "@/types";
-import { Send, GitBranch, ArrowLeft } from "lucide-react";
+import { Send, GitBranch } from "lucide-react";
 import { Suspense, useState, useEffect } from "react";
 
 function ChatContent() {
@@ -19,7 +19,10 @@ function ChatContent() {
   const { navigateToVisualize, navigateToHome } = useNavigation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [chatHistory] = useState<ChatHistory[]>(mockChatHistory);
-  const [repoData, setRepoData] = useState<{ repo_id: string; github_url: string } | null>(null);
+  const [repoData, setRepoData] = useState<{
+    repo_id: string;
+    github_url: string;
+  } | null>(null);
 
   // Get repository data from localStorage or URL params
   useEffect(() => {
@@ -27,13 +30,13 @@ function ChatContent() {
     if (storedRepoData) {
       setRepoData({
         repo_id: storedRepoData.repo_id,
-        github_url: storedRepoData.github_url
+        github_url: storedRepoData.github_url,
       });
     } else if (currentRepo) {
       // Fallback to URL param if no localStorage data
       setRepoData({
         repo_id: currentRepo,
-        github_url: 'Unknown'
+        github_url: "Unknown",
       });
     }
   }, [currentRepo]);
@@ -50,12 +53,11 @@ function ChatContent() {
     handleKeyPress,
     isConnected,
     isStreaming,
-    socketId,
     repoId,
     mode,
   } = useChat({
     repoId: repoData?.repo_id || currentRepo || undefined,
-    mode: "fast"
+    mode: "fast",
   });
 
   const handleHistoryItemClick = (chatId: string) => {
@@ -74,9 +76,12 @@ function ChatContent() {
         chatHistory={chatHistory}
         currentChatId={currentChatId}
         onNewChat={startNewChat}
-              onNavigateToVisualize={() =>
-                navigateToVisualize(repoData?.repo_id || currentRepo || "github.com/owner/project")
-              }
+        onNavigateToVisualize={() =>
+          navigateToVisualize(
+            repoData?.repo_id || currentRepo || "github.com/owner/project"
+          )
+        }
+        onNavigateToHome={navigateToHome}
         onHistoryItemClick={handleHistoryItemClick}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
       />
@@ -86,35 +91,28 @@ function ChatContent() {
         {/* Minimalistic Header - Fixed */}
         <header className="bg-white/5 backdrop-blur-sm border-b border-white/10 p-6 flex items-center justify-between flex-shrink-0">
           <div className="flex items-center gap-4">
-            <Button
-              onClick={navigateToHome}
-              variant="ghost"
-              size="sm"
-              className="text-white/70 hover:text-white"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Home
-            </Button>
             <span className="text-xl font-light tracking-wide">
               Codebase AI
             </span>
-                  {repoData && (
-                    <div className="flex items-center gap-2 text-sm text-white/70">
-                      <GitBranch className="h-4 w-4" />
-                      <span>Repository: {repoData.github_url}</span>
-                    </div>
-                  )}
+            {repoData && (
+              <div className="flex items-center gap-2 text-sm text-white/70">
+                <GitBranch className="h-4 w-4" />
+                <span>Repository: {repoData.github_url}</span>
+              </div>
+            )}
           </div>
-          
+
           <div className="flex items-center gap-4">
             {/* Connection Status */}
             <div className="flex items-center gap-3 text-sm">
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${
-                  isConnected ? 'bg-green-500' : 'bg-red-500'
-                }`} />
+                <div
+                  className={`w-2 h-2 rounded-full ${
+                    isConnected ? "bg-green-500" : "bg-red-500"
+                  }`}
+                />
                 <span className="text-white/70">
-                  {isConnected ? 'Connected' : 'Disconnected'}
+                  {isConnected ? "Connected" : "Disconnected"}
                 </span>
               </div>
               {isStreaming && (
@@ -124,9 +122,7 @@ function ChatContent() {
                 </div>
               )}
               {repoId && (
-                <span className="text-white/50 text-xs">
-                  {mode} mode
-                </span>
+                <span className="text-white/50 text-xs">{mode} mode</span>
               )}
             </div>
           </div>

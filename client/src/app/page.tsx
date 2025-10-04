@@ -18,38 +18,43 @@ export default function Home() {
   const { url, setUrl, isValid, getNormalizedUrl } = useGitHubUrl();
   const { navigateToChat, navigateToVisualize } = useNavigation();
   const { cloneAndIngest, isLoading, error, clearError } = useRepository();
-  const [actionType, setActionType] = useState<'chat' | 'visualize' | null>(null);
+  const [actionType, setActionType] = useState<"chat" | "visualize" | null>(
+    null
+  );
 
   const handleOpenChat = async () => {
     if (!isValid || isLoading) return;
-    
-    setActionType('chat');
+
+    setActionType("chat");
     clearError();
-    
+
     try {
       // Use normalized URL for API call
       const normalizedUrl = getNormalizedUrl();
       const result = await cloneAndIngest(normalizedUrl);
-      
+
       if (result.success && result.data.repo_id) {
         // Store repository data in localStorage for streaming functionality
         LocalStorageService.setRepositoryData({
           repo_id: result.data.repo_id,
           github_url: normalizedUrl,
           files_processed: result.data.files_processed,
-          index_name: result.data.index_name
+          index_name: result.data.index_name,
         });
-        
+
         // Navigate to chat with the repository ID
         navigateToChat(result.data.repo_id);
       } else {
         // Handle API error response
-        const errorMessage = result.error || result.message || 'Failed to clone and ingest repository';
-        console.error('Repository cloning failed:', errorMessage);
+        const errorMessage =
+          result.error ||
+          result.message ||
+          "Failed to clone and ingest repository";
+        console.error("Repository cloning failed:", errorMessage);
         // The error will be displayed by the useRepository hook
       }
     } catch (error) {
-      console.error('Network error during repository cloning:', error);
+      console.error("Network error during repository cloning:", error);
       // The error will be displayed by the useRepository hook
     } finally {
       setActionType(null);
@@ -58,34 +63,37 @@ export default function Home() {
 
   const handleVisualize = async () => {
     if (!isValid || isLoading) return;
-    
-    setActionType('visualize');
+
+    setActionType("visualize");
     clearError();
-    
+
     try {
       // Use normalized URL for API call
       const normalizedUrl = getNormalizedUrl();
       const result = await cloneAndIngest(normalizedUrl);
-      
+
       if (result.success && result.data.repo_id) {
         // Store repository data in localStorage for streaming functionality
         LocalStorageService.setRepositoryData({
           repo_id: result.data.repo_id,
           github_url: normalizedUrl,
           files_processed: result.data.files_processed,
-          index_name: result.data.index_name
+          index_name: result.data.index_name,
         });
-        
+
         // Navigate to visualize with the repository ID
         navigateToVisualize(result.data.repo_id);
       } else {
         // Handle API error response
-        const errorMessage = result.error || result.message || 'Failed to clone and ingest repository';
-        console.error('Repository cloning failed:', errorMessage);
+        const errorMessage =
+          result.error ||
+          result.message ||
+          "Failed to clone and ingest repository";
+        console.error("Repository cloning failed:", errorMessage);
         // The error will be displayed by the useRepository hook
       }
     } catch (error) {
-      console.error('Network error during repository cloning:', error);
+      console.error("Network error during repository cloning:", error);
       // The error will be displayed by the useRepository hook
     } finally {
       setActionType(null);
@@ -131,7 +139,9 @@ export default function Home() {
                     </div>
                   </div>
                   <div className="flex-1">
-                    <h3 className="text-red-400 font-semibold mb-2">Repository Processing Failed</h3>
+                    <h3 className="text-red-400 font-semibold mb-2">
+                      Repository Processing Failed
+                    </h3>
                     <p className="text-red-300/80 text-sm mb-3">{error}</p>
                     <div className="flex gap-2">
                       <Button
@@ -166,9 +176,11 @@ export default function Home() {
                   <div className="flex-1 text-blue-400">
                     <div className="space-y-2">
                       <p className="font-semibold text-lg">
-                        {actionType === 'chat' ? 'Preparing Chat Interface...' : 
-                         actionType === 'visualize' ? 'Preparing Visualization...' : 
-                         'Processing Repository...'}
+                        {actionType === "chat"
+                          ? "Preparing Chat Interface..."
+                          : actionType === "visualize"
+                            ? "Preparing Visualization..."
+                            : "Processing Repository..."}
                       </p>
                       <div className="space-y-1 text-sm text-blue-300/80">
                         <p>• Cloning repository from GitHub</p>
@@ -194,7 +206,7 @@ export default function Home() {
                 size="lg"
                 className="min-w-[140px]"
               >
-                {isLoading && actionType === 'chat' ? (
+                {isLoading && actionType === "chat" ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 ) : (
                   "Open Chat"
@@ -207,7 +219,7 @@ export default function Home() {
                 size="lg"
                 className="min-w-[140px]"
               >
-                {isLoading && actionType === 'visualize' ? (
+                {isLoading && actionType === "visualize" ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 ) : (
                   "Visualize"

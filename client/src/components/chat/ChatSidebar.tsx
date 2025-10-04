@@ -1,4 +1,14 @@
-import { Github, MessageCircle, History, Plus, Menu, X } from "lucide-react";
+import {
+  Github,
+  MessageCircle,
+  History,
+  Plus,
+  Menu,
+  SidebarClose,
+  SidebarOpen,
+  ArrowLeft,
+  Home,
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { ChatHistory } from "@/types";
 import { formatDateConsistent } from "@/lib/utils";
@@ -10,6 +20,7 @@ interface ChatSidebarProps {
   currentChatId: string | null;
   onNewChat: () => void;
   onNavigateToVisualize: () => void;
+  onNavigateToHome: () => void;
   onHistoryItemClick: (chatId: string) => void;
   onToggleSidebar: () => void;
 }
@@ -25,6 +36,7 @@ export function ChatSidebar({
   currentChatId,
   onNewChat,
   onNavigateToVisualize,
+  onNavigateToHome,
   onHistoryItemClick,
   onToggleSidebar,
 }: ChatSidebarProps) {
@@ -38,12 +50,20 @@ export function ChatSidebar({
             className="w-full p-2 hover:bg-white/10 rounded-lg transition-all duration-300 flex items-center justify-center"
             aria-label="Expand sidebar"
           >
-            <Menu className="h-5 w-5 text-white" />
+            <SidebarOpen className="h-5 w-5 text-white" />
           </button>
         </div>
 
         {/* Collapsed Actions */}
         <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+          <button
+            onClick={onNavigateToHome}
+            className="w-full p-2 hover:bg-white/10 rounded-lg transition-all duration-300 flex items-center justify-center"
+            title="Back to Home"
+            aria-label="Navigate to home"
+          >
+            <Home className="h-4 w-4 text-white" />
+          </button>
           <button
             onClick={onNewChat}
             className="w-full p-2 hover:bg-white/10 rounded-lg transition-all duration-300 flex items-center justify-center"
@@ -60,23 +80,6 @@ export function ChatSidebar({
           >
             <MessageCircle className="h-4 w-4 text-white" />
           </button>
-        </div>
-
-        {/* Collapsed History */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-          <div className="space-y-2">
-            {chatHistory.slice(0, 5).map(chat => (
-              <button
-                key={chat.id}
-                onClick={() => onHistoryItemClick(chat.id)}
-                className="w-full p-2 hover:bg-white/10 rounded-lg transition-all duration-300 flex items-center justify-center"
-                title={chat.title}
-                aria-label={`Open chat: ${chat.title}`}
-              >
-                <History className="h-4 w-4 text-gray-400 hover:text-white transition-colors" />
-              </button>
-            ))}
-          </div>
         </div>
       </div>
     );
@@ -97,7 +100,7 @@ export function ChatSidebar({
             className="p-2 hover:bg-white/10 rounded-lg transition-all duration-300 flex-shrink-0"
             aria-label="Collapse sidebar"
           >
-            <X className="h-5 w-5 text-white" />
+            <SidebarClose className="h-5 w-5 text-white" />
           </button>
         </div>
         <div className="mt-4 sm:mt-6">
@@ -112,6 +115,15 @@ export function ChatSidebar({
 
       {/* Actions */}
       <div className="p-4 sm:p-6 space-y-2 sm:space-y-3">
+        <Button
+          onClick={onNavigateToHome}
+          variant="ghost"
+          className="w-full justify-start"
+          size="sm"
+        >
+          <Home className="h-4 w-4 mr-2" />
+          <span className="text-sm sm:text-base">Back to Home</span>
+        </Button>
         <Button
           onClick={onNewChat}
           variant="primary"

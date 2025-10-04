@@ -12,17 +12,17 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function normalizeGitHubUrl(url: string): string {
   const trimmedUrl = url.trim();
-  
+
   // If URL already has a protocol, return as is
-  if (trimmedUrl.startsWith('https://')) {
+  if (trimmedUrl.startsWith("https://")) {
     return trimmedUrl;
   }
-  
+
   // Only add https:// if no protocol is present at all
-  if (!trimmedUrl.includes('://')) {
+  if (!trimmedUrl.includes("://")) {
     return `https://${trimmedUrl}`;
   }
-  
+
   // Return as is if it has some other protocol or is just a domain
   return trimmedUrl;
 }
