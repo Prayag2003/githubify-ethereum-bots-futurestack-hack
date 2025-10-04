@@ -11,9 +11,10 @@ import ReactFlow, {
   MarkerType,
   Node,
   Edge,
+  useViewport,
 } from "reactflow";
 import dagre from "dagre";
-// import "reactflow/dist/style.css";
+import "reactflow/dist/style.css";
 import {
   Search,
   Layers,
@@ -308,7 +309,7 @@ const DiagramViewerInner: React.FC = () => {
   const [isCompact, setIsCompact] = useState<boolean>(false);
   const [showSimplified, setShowSimplified] = useState<boolean>(false);
   const [selectedCategories, setSelectedCategories] = useState<string[]>(['all']);
-  const { setCenter, zoomIn, zoomOut } = useReactFlow();
+  const { setCenter, zoomIn, zoomOut, fitView } = useReactFlow();
   const router = useRouter();
   const searchParams = useSearchParams();
   const currentRepo = searchParams.get("repo");
@@ -396,6 +397,7 @@ const DiagramViewerInner: React.FC = () => {
           setError(result.error || "Failed to generate diagram");
         }
       } catch (err) {
+        console.error("Error loading diagram:", err);
         setError(err instanceof Error ? err.message : "Unknown error occurred");
       } finally {
         setIsLoading(false);
