@@ -18,6 +18,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import { cn, formatDateConsistent } from "@/lib/utils";
+import { LocalStorageService } from "@/services/localStorageService";
 
 interface FileNode {
   id: string;
@@ -248,9 +249,16 @@ shared-workspace-lockfile: true`,
   ];
 
   useEffect(() => {
-    const repo = searchParams.get("repo");
-    if (repo) {
-      setCurrentRepo(decodeURIComponent(repo));
+    // First try to get from localStorage
+    const storedRepoData = LocalStorageService.getRepositoryData();
+    if (storedRepoData) {
+      setCurrentRepo(storedRepoData.github_url);
+    } else {
+      // Fallback to URL params
+      const repo = searchParams.get("repo");
+      if (repo) {
+        setCurrentRepo(decodeURIComponent(repo));
+      }
     }
   }, [searchParams]);
 
