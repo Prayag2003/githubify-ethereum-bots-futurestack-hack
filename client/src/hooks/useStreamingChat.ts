@@ -1,11 +1,12 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { io, Socket } from "socket.io-client";
 import { ChatMessage } from "@/types";
+import { STREAMING_CONFIG, SERVER_CONFIG, CHAT_CONFIG, type StreamingMode } from "@/lib/constants";
 
 interface StreamingChatOptions {
   serverUrl?: string;
   repoId?: string;
-  mode?: "fast" | "accurate";
+  mode?: StreamingMode;
 }
 
 interface StreamingState {
@@ -29,9 +30,9 @@ let globalActiveMessageId: string | null = null;
  */
 export function useStreamingChat(options: StreamingChatOptions = {}) {
   const {
-    serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8000",
+    serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || SERVER_CONFIG.DEFAULT_URL,
     repoId,
-    mode = "fast",
+    mode = CHAT_CONFIG.DEFAULT_MODE,
   } = options;
 
 
@@ -85,12 +86,12 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
     if (!globalSocket) {
       console.log("🔌 Initializing new global socket connection to:", serverUrl);
       globalSocket = io(serverUrl, {
-        path: "/socket.io",
-        transports: ["websocket", "polling"],
+        path: SERVER_CONFIG.SOCKET_PATH,
+        transports: [...SERVER_CONFIG.TRANSPORTS],
         autoConnect: true,
         reconnection: true,
-        reconnectionAttempts: 5,
-        reconnectionDelay: 1000,
+        reconnectionAttempts: STREAMING_CONFIG.RECONNECTION_ATTEMPTS,
+        reconnectionDelay: STREAMING_CONFIG.RECONNECTION_DELAY,
       });
       globalSocketServerUrl = serverUrl;
       socketRef.current = globalSocket;
@@ -124,69 +125,44 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
       }));
     });
 
-    // Streaming events - direct approach
+    // Streaming events - simple direct approach
     addListenerOnce("query_chunk", (data: { text: string }) => {
-      // Accumulate streaming content
+      console.log("📦 Received chunk:", data.text);
+      
+      // Accumulate streaming content directly
       streamingContentRef.current += data.text;
 
-      // Add or update assistant message with current content
+      // Update the assistant message with current content
       if (currentAssistantMessageIdRef.current) {
-        // Check if this message ID is already being processed globally
-        if (globalActiveMessageId === currentAssistantMessageIdRef.current) {
-          setMessages(prev => {
-            const messageExists = prev.some(
-              msg => msg.id === currentAssistantMessageIdRef.current
-            );
+        setMessages(prev => {
+          const messageExists = prev.some(
+            msg => msg.id === currentAssistantMessageIdRef.current
+          );
 
-            if (messageExists) {
-              return prev.map(msg =>
-                msg.id === currentAssistantMessageIdRef.current
-                  ? { ...msg, content: streamingContentRef.current }
-                  : msg
-              );
-            } else if (currentAssistantMessageIdRef.current) {
-              // Message doesn't exist in this instance, but is being processed globally
-              // Add it to this instance
-              const assistantMessage: ChatMessage = {
-                id: currentAssistantMessageIdRef.current,
-                role: "assistant",
-                content: streamingContentRef.current,
-                timestamp: new Date(),
-              };
-              return [...prev, assistantMessage];
-            }
-            return prev;
-          });
-        } else {
-          // This is a new message, set it as the global active message
-          globalActiveMessageId = currentAssistantMessageIdRef.current;
-          
-          setMessages(prev => {
-            const messageExists = prev.some(
-              msg => msg.id === currentAssistantMessageIdRef.current
+          if (messageExists) {
+            return prev.map(msg =>
+              msg.id === currentAssistantMessageIdRef.current
+                ? { ...msg, content: streamingContentRef.current }
+                : msg
             );
-
-            if (!messageExists && currentAssistantMessageIdRef.current) {
-              const assistantMessage: ChatMessage = {
-                id: currentAssistantMessageIdRef.current,
-                role: "assistant",
-                content: streamingContentRef.current,
-                timestamp: new Date(),
-              };
-              return [...prev, assistantMessage];
-            } else {
-              return prev.map(msg =>
-                msg.id === currentAssistantMessageIdRef.current
-                  ? { ...msg, content: streamingContentRef.current }
-                  : msg
-              );
-            }
-          });
-        }
+          } else if (currentAssistantMessageIdRef.current) {
+            const assistantMessage: ChatMessage = {
+              id: currentAssistantMessageIdRef.current,
+              role: "assistant",
+              content: streamingContentRef.current,
+              timestamp: new Date(),
+            };
+            return [...prev, assistantMessage];
+          }
+          return prev;
+        });
       }
     });
 
     addListenerOnce("query_complete", (data: { text: string }) => {
+      console.log("✅ Query complete");
+      
+      // Set streaming state to complete
       setStreamingState(prev => ({
         ...prev,
         isStreaming: false,
@@ -273,6 +249,9 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
       console.error("❌ Socket reconnection error:", error);
     });
 
+    // Simple streaming - no complex queue needed
+    console.log("🚀 Simple streaming initialized");
+
     isInitializedRef.current = true;
 
     return () => {
@@ -296,12 +275,12 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         return;
       }
 
-      // Prevent duplicate messages within 1 second
+      // Prevent duplicate messages within threshold
       const now = Date.now();
       const timeSinceLastMessage = now - lastMessageTimeRef.current;
       if (
         lastMessageRef.current === content.trim() &&
-        timeSinceLastMessage < 1000
+        timeSinceLastMessage < CHAT_CONFIG.DUPLICATE_MESSAGE_THRESHOLD_MS
       ) {
         return;
       }
@@ -321,6 +300,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
 
       // Generate assistant message ID for streaming
       const assistantMessageId = `${baseId}-assistant-${Math.random().toString(36).substr(2, 9)}`;
+      console.log(`🆔 Generated assistant message ID: ${assistantMessageId}`);
 
       // Reset global active message for new message
       globalActiveMessageId = null;
@@ -330,6 +310,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
       setCurrentMessage("");
       setIsLoading(true);
       currentAssistantMessageIdRef.current = assistantMessageId;
+      console.log(`📌 Set current assistant message ID: ${currentAssistantMessageIdRef.current}`);
 
       setStreamingState(prev => ({
         ...prev,

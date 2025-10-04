@@ -1,5 +1,6 @@
 import { User, Bot } from "lucide-react";
 import { ChatMessage } from "@/types";
+import { MarkdownRenderer, isMarkdownContent } from "@/lib/markdownUtils";
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -27,9 +28,21 @@ export function MessageBubble({ message }: MessageBubbleProps) {
             : "bg-white/5 border border-white/10 text-gray-100"
         }`}
       >
-        <div className="whitespace-pre-wrap text-sm leading-relaxed">
-          {message.content}
-        </div>
+        {isUser ? (
+          <div className="whitespace-pre-wrap text-sm leading-relaxed">
+            {message.content}
+          </div>
+        ) : (
+          <div className="text-sm leading-relaxed">
+            {isMarkdownContent(message.content) ? (
+              <MarkdownRenderer content={message.content} />
+            ) : (
+              <div className="whitespace-pre-wrap">
+                {message.content}
+              </div>
+            )}
+          </div>
+        )}
         <div className="text-xs opacity-60 mt-3 font-light">
           {message.timestamp.toLocaleTimeString()}
         </div>

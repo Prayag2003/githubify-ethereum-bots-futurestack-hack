@@ -1,10 +1,11 @@
 import React, { useState, useCallback } from "react";
 import { ChatMessage, ChatHistory } from "@/types";
 import { useStreamingChat } from "./useStreamingChat";
+import { CHAT_CONFIG, type ChatMode } from "@/lib/constants";
 
 interface UseChatOptions {
   repoId?: string;
-  mode?: "fast" | "accurate";
+  mode?: ChatMode;
 }
 
 /**
@@ -12,7 +13,7 @@ interface UseChatOptions {
  * Following KISS principle - single responsibility for chat management
  */
 export function useChat(options: UseChatOptions = {}) {
-  const { repoId, mode = "accurate" } = options;
+  const { repoId, mode = CHAT_CONFIG.DEFAULT_MODE } = options;
 
   // Always use streaming chat since repository is always available from home page
   const streamingChat = useStreamingChat({

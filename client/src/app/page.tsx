@@ -14,7 +14,7 @@ export default function EnhancedLanding() {
 
   const [isFocused, setIsFocused] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 50, y: 50 });
-  const [particles, setParticles] = useState([]);
+  const [particles, setParticles] = useState<Array<{ id: number; x: number; y: number; size: number; duration: number; delay: number }>>([]);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
   const [currentCompany, setCurrentCompany] = useState(0);
   const [actionType, setActionType] = useState<'chat' | 'explore' | 'visualize' | null>(null);
