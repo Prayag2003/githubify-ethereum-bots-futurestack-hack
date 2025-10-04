@@ -1,3 +1,4 @@
+import os
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,7 +9,7 @@ from app.services import socket_server
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    force=True  # Force reconfiguration
+    force=True
 )
 
 # Set specific loggers to INFO level
@@ -27,8 +28,8 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # In production, specify your frontend URL
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all HTTP methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Register routes
@@ -49,3 +50,17 @@ async def startup_event():
 @app.get("/")
 def health_check():
     return {"status": "ok", "message": "Codebase Comprehender API running"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    # Read port from environment (default: 8000)
+    port = int(os.getenv("PORT", 8000))
+
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=port,
+        reload=True
+    )
