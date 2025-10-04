@@ -130,8 +130,10 @@ Your diagrams should:
 - Include modules, services, and their relationships
 - Be clear and well-organized
 - Use meaningful node names and labels
+- Always recheck the diagram before outputting it 
+- It must not have any syntax errors always rechek it
 
-CRITICAL: Output ONLY the Mermaid code block. No explanations, just the diagram."""
+CRITICAL: Output ONLY the Mermaid code block. No explanations, just the diagram. Make sure it must not have any syntax errors"""
 
         files_summary = "\n".join([
             f"- {f['path']} ({f['ext']}): {f['content'][:200]}"
@@ -156,6 +158,8 @@ Generate a comprehensive Mermaid diagram showing:
 2. Folder organization
 3. Key relationships between components
 4. Entry points and APIs
+5. Always recheck the diagram before outputting it 
+6. It must not have any syntax errors always rechek it
 
 Output ONLY the Mermaid code (start with ```mermaid and end with ```):"""
 
@@ -185,6 +189,8 @@ Rules:
 - Add new nodes/relationships only if they represent significant components
 - Maintain consistency with existing naming
 - Keep the diagram clean and not cluttered
+- Always recheck the diagram before outputting it 
+- It must not have any syntax errors always rechek it
 - Output ONLY the updated Mermaid code"""
 
         files_summary = "\n".join([
@@ -200,7 +206,7 @@ Rules:
 New Files:
 {files_summary}
 
-Update the diagram and return ONLY the Mermaid code block."""
+Update the diagram and return ONLY the Mermaid code block. Make sure it must not have any syntax errors. Recheck it before outputting it"""
         try:
             response = await self.llm.completion(prompt, system_prompt=system_prompt)
             new_mermaid = self._extract_mermaid(response.get("text", ""))

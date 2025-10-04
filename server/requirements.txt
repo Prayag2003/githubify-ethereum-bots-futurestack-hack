@@ -27,3 +27,5 @@ langchain_google_genai
 # Socket.IO for async with FastAPI
 python-socketio>=5.7.0
 aiohttp
+
+numpy>=1.21.0
