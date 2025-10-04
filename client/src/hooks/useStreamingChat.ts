@@ -23,7 +23,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
   const {
     serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:8000",
     repoId,
-    mode = "accurate"
+    mode = "fast"
   } = options;
   
   console.log("🔧 useStreamingChat initialized with:", { serverUrl, repoId, mode });

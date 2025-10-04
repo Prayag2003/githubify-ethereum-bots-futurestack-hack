@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 class MermaidArchitectureGenerator:
     """Generate architecture diagrams iteratively using Cerebras LLMs."""
 
-    def __init__(self, model: str = "llama3.1-70b"):
+    def __init__(self, model: str = "llama3.1-8b"):
         """
         Initialize with Cerebras model.
         Options: llama3.1-8b, llama3.1-70b, llama3.3-70b, qwen2.5-coder-32b-instruct

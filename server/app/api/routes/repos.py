@@ -1,4 +1,5 @@
 import logging
+import re
 from fastapi import APIRouter
 from app.models.schemas import RepoRequest
 from app.services import repo_manager
@@ -9,13 +10,27 @@ from app.parser.ast_parser import load_codebase_as_graph_docs
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+def sanitize_github_url(url: str) -> str:
+    """Sanitize the GitHub URL to ensure it has https:// protocol."""
+    if not url.startswith("https://"):
+        return f"https://{url}"
+    print("URL", url)
+    return url
+
 @router.post("/ingest")
 def ingest_repo(payload: RepoRequest):
     """Clone, parse, embed, and store repository in Pinecone."""
     try:
+        sanitized_url = sanitize_github_url(payload.github_url)
+         # Simple regex to check for a valid GitHub URL format
+
+        if not re.match(r"https://github\.com/[a-zA-Z0-9_-]+/[a-zA-Z0-9_-]+(\.git)?", sanitized_url):
+            logger.error("❌ Invalid GitHub URL format: %s", payload.github_url)
+            return StandardResponse.error(f"Invalid GitHub URL format {sanitized_url}", code=400)
+        
         # Step 1: Clone repository
         logger.info("🔗 Cloning repository: %s", payload.github_url)
-        repo_id = repo_manager.clone_repo(payload.github_url)
+        repo_id = repo_manager.clone_repo(sanitized_url, token=getattr(payload, "token", None))
         logger.info("✅ Repository cloned successfully: %s", repo_id)
         
         # Step 2: Parse to chunked documents

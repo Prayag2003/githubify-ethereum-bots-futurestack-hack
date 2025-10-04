@@ -55,7 +55,7 @@ function ChatContent() {
     mode,
   } = useChat({
     repoId: repoData?.repo_id || currentRepo || undefined,
-    mode: "accurate"
+    mode: "fast"
   });
 
   const handleHistoryItemClick = (chatId: string) => {

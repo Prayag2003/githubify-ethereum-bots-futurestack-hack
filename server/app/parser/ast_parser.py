@@ -229,19 +229,20 @@ def load_codebase_as_chunked_docs(repo_root: str) -> List[Document]:
                 
                 # FIXED-SIZE CHUNKING
                 logger.info("  🔧 Creating fixed-size chunks for %s", relative_path)
-                fixed_chunks = fixed_chunker.chunk(content)
-                for i, chunk in enumerate(fixed_chunks):
-                    chunk_metadata = {
-                        **base_metadata,
-                        'chunk_type': 'fixed',
-                        'chunk_index': i,
-                        'total_chunks': len(fixed_chunks),
-                        'chunk_size': len(chunk)
-                    }
-                    docs.append(Document(page_content=chunk, metadata=chunk_metadata))
-                    total_fixed_chunks += 1
+                # fixed_chunks = fixed_chunker.chunk(content)
+                # for i, chunk in enumerate(fixed_chunks):
+                #     chunk_metadata = {
+                #         **base_metadata,
+                #         'chunk_type': 'fixed',
+                #         'chunk_index': i,
+                #         'total_chunks': len(fixed_chunks),
+                #         'chunk_size': len(chunk)
+                #     }
+                #     docs.append(Document(page_content=chunk, metadata=chunk_metadata))
+                #     total_fixed_chunks += 1
                 
-                # SEMANTIC CHUNKING
+                # # SEMANTIC CHUNKING
+                
                 logger.info("  🧠 Creating semantic chunks for %s", relative_path)
                 # semantic_chunks = semantic_chunker.chunk(content, ext)
                 # for i, chunk in enumerate(semantic_chunks):
@@ -256,20 +257,21 @@ def load_codebase_as_chunked_docs(repo_root: str) -> List[Document]:
                 #     total_semantic_chunks += 1
                 
                 # AST CHUNKING
-                # logger.info("  🌳 Creating AST chunks for %s", relative_path)
-                # ast_chunks = ast_chunker.chunk(content, ext)
-                # for i, chunk in enumerate(ast_chunks):
-                #     chunk_metadata = {
-                #         **base_metadata,
-                #         'chunk_type': 'ast',
-                #         'chunk_index': i,
-                #         'total_chunks': len(ast_chunks),
-                #         'chunk_size': len(chunk)
-                #     }
-                #     docs.append(Document(page_content=chunk, metadata=chunk_metadata))
-                #     total_ast_chunks += 1
+                logger.info("  🌳 Creating AST chunks for %s", relative_path)
+                ast_chunks = ast_chunker.chunk(content, ext)
+                for i, chunk in enumerate(ast_chunks):
+                    chunk_metadata = {
+                        **base_metadata,
+                        'chunk_type': 'ast',
+                        'chunk_index': i,
+                        'total_chunks': len(ast_chunks),
+                        'chunk_size': len(chunk)
+                    }
+                    docs.append(Document(page_content=chunk, metadata=chunk_metadata))
+                    total_ast_chunks += 1
                 semantic_chunks = []
-                ast_chunks = []
+                # ast_chunks = []
+                fixed_chunks = []
                 
                 # Calculate file totals
                 file_fixed = len(fixed_chunks)
