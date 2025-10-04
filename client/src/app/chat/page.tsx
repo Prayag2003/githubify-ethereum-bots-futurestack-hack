@@ -79,11 +79,6 @@ function ChatContent() {
         onNavigateToVisualize={() =>
           navigateToVisualize(repoData?.repo_id || currentRepo || "github.com/owner/project")
         }
-        onNavigateToVisualize={() =>
-          navigateToVisualize(
-            repoData?.repo_id || currentRepo || "github.com/owner/project"
-          )
-        }
         onNavigateToHome={navigateToHome}
         onHistoryItemClick={handleHistoryItemClick}
         onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
