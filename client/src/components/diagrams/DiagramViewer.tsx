@@ -11,7 +11,6 @@ import ReactFlow, {
   MarkerType,
   Node,
   Edge,
-  useViewport,
 } from "reactflow";
 import dagre from "dagre";
 import "reactflow/dist/style.css";
@@ -405,7 +404,7 @@ const DiagramViewerInner: React.FC = () => {
     };
 
     loadDiagram();
-  }, []);
+  }, []); // Empty dependency array - only run once on mount
 
   useEffect(() => {
     if (filteredData.nodes.length > 0) {
@@ -418,9 +417,9 @@ const DiagramViewerInner: React.FC = () => {
       );
       setNodes(layoutedNodes);
       setEdges(layoutedEdges);
-      // setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 50);
+      setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 50);
     }
-  }, [filteredData, isDark, layout, isCompact]);
+  }, [filteredData, isDark, layout, isCompact, fitView]);
 
   const handleLayoutChange = (newLayout: string) => {
     setLayout(newLayout);
@@ -435,23 +434,23 @@ const DiagramViewerInner: React.FC = () => {
     [setCenter]
   );
 
-  const handleClearSearch = () => {
+  const handleClearSearch = useCallback(() => {
     setSearchTerm("");
-    fitView({ padding: 0.2, duration: 400 });
-  };
+    setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 100);
+  }, [fitView]);
 
-  const handleReset = () => {
+  const handleReset = useCallback(() => {
     setSearchTerm("");
     setSelectedCategories(['all']);
     setShowSimplified(false);
-    fitView({ padding: 0.2, duration: 400 });
-  };
+    setTimeout(() => fitView({ padding: 0.2, duration: 400 }), 100);
+  }, [fitView]);
 
-  const handleBackToHome = () => {
+  const handleBackToHome = useCallback(() => {
     router.push("/");
-  };
+  }, [router]);
 
-  const toggleCategory = (category: string) => {
+  const toggleCategory = useCallback((category: string) => {
     if (category === 'all') {
       setSelectedCategories(['all']);
     } else {
@@ -465,22 +464,42 @@ const DiagramViewerInner: React.FC = () => {
         }
       });
     }
-  };
+  }, []);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSearchTerm("");
+        setSelectedCategories(['all']);
+        setShowSimplified(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   if (isLoading) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-gray-900">
+      <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
         <div className="text-center">
-          <div className="relative">
-            <div className="animate-spin rounded-full h-16 w-16 border-4 border-blue-500 border-t-transparent mx-auto mb-4"></div>
+          <div className="relative mb-8">
+            <div className="animate-spin rounded-full h-20 w-20 border-4 border-blue-500 border-t-transparent mx-auto"></div>
             <div className="absolute inset-0 rounded-full bg-blue-400/20 animate-ping"></div>
+            <div className="absolute inset-2 rounded-full bg-purple-400/10 animate-pulse"></div>
           </div>
-          <p className="text-white text-lg font-semibold mb-2">
+          <h2 className="text-white text-2xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
             Generating Architecture Diagram
-          </p>
-          <p className="text-gray-400 text-sm">
+          </h2>
+          <p className="text-gray-400 text-lg mb-4">
             Analyzing your codebase structure...
           </p>
+          <div className="flex justify-center space-x-1">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
+            <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+          </div>
         </div>
       </div>
     );
@@ -488,18 +507,21 @@ const DiagramViewerInner: React.FC = () => {
 
   if (error) {
     return (
-      <div className="w-full h-screen flex items-center justify-center bg-gray-900">
+      <div className="w-full h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-red-900/20 to-gray-900">
         <div className="text-center max-w-md">
-          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-6">
-            <h3 className="text-red-400 font-semibold text-lg mb-2">
+          <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-8 shadow-2xl backdrop-blur-sm">
+            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <X className="w-8 h-8 text-red-400" />
+            </div>
+            <h3 className="text-red-400 font-bold text-xl mb-3">
               Failed to Load Diagram
             </h3>
-            <p className="text-red-300/80 text-sm mb-4">{error}</p>
+            <p className="text-red-300/80 text-sm mb-6 leading-relaxed">{error}</p>
             <button
               onClick={handleBackToHome}
-              className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-300 text-sm font-medium transition-colors"
+              className="px-6 py-3 bg-red-500/20 hover:bg-red-500/30 border border-red-500/50 rounded-lg text-red-300 text-sm font-medium transition-all duration-200 transform hover:scale-105 flex items-center gap-2 mx-auto"
             >
-              <ArrowLeft className="w-4 h-4 inline mr-2" />
+              <ArrowLeft className="w-4 h-4" />
               Back to Home
             </button>
           </div>
@@ -661,6 +683,7 @@ const DiagramViewerInner: React.FC = () => {
                 ? "bg-gray-700 border-gray-600 text-white placeholder-gray-400"
                 : "bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500"
                 } border focus:outline-none focus:ring-2 focus:ring-blue-500`}
+              aria-label="Search nodes in diagram"
             />
             {searchTerm && (
               <button
