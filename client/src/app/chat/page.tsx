@@ -9,7 +9,7 @@ import { useChat } from "@/hooks/useChat";
 import { useNavigation } from "@/hooks/useNavigation";
 import { useSearchParamsData } from "@/hooks/useSearchParams";
 import { LocalStorageService } from "@/services/localStorageService";
-import { mockChatHistory } from "@/services/mockData";
+// import { mockChatHistory } from "@/services/mockData";
 import { ChatHistory } from "@/types";
 import { Send, GitBranch } from "lucide-react";
 import { Suspense, useState, useEffect } from "react";
@@ -18,7 +18,8 @@ function ChatContent() {
   const { currentRepo } = useSearchParamsData();
   const { navigateToVisualize, navigateToHome } = useNavigation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [chatHistory] = useState<ChatHistory[]>(mockChatHistory);
+  // const [chatHistory] = useState<ChatHistory[]>(mockChatHistory);
+  const [chatHistory] = useState<ChatHistory[]>([]);
   const [repoData, setRepoData] = useState<{
     repo_id: string;
     github_url: string;
@@ -110,12 +111,12 @@ function ChatContent() {
                   {isConnected ? "Connected" : "Disconnected"}
                 </span>
               </div>
-              {isStreaming && (
+              {/* {isStreaming && (
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                   <span className="text-blue-400">Streaming</span>
                 </div>
-              )}
+              )} */}
               {/* {repoId && (
                 <span className="text-white/50 text-xs">{mode} mode</span>
               )} */}
