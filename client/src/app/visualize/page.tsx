@@ -21,20 +21,13 @@ import {
   Layers,
   Zap,
   ArrowLeft,
+  RefreshCw,
 } from "lucide-react";
 import { cn, formatDateConsistent } from "@/lib/utils";
 import { LocalStorageService } from "@/services/localStorageService";
+import { treeService, FileNode } from "@/services/treeService";
 import DiagramViewer from "@/components/diagrams/DiagramViewer";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-
-interface FileNode {
-  id: string;
-  name: string;
-  type: "file" | "folder";
-  children?: FileNode[];
-  content?: string;
-  size?: string;
-}
 
 interface RepoHistory {
   id: string;
@@ -56,6 +49,10 @@ function VisualizeContent() {
     new Set(["src", "src/components"])
   );
   const [currentRepo, setCurrentRepo] = useState("");
+  const [fileTree, setFileTree] = useState<FileNode[]>([]);
+  const [isLoadingTree, setIsLoadingTree] = useState(false);
+  const [treeError, setTreeError] = useState<string | null>(null);
+  const [isLoadingFileContent, setIsLoadingFileContent] = useState(false);
 
   // Mock repo history - in real app, this would come from localStorage or API
   const [repoHistory, setRepoHistory] = useState<RepoHistory[]>([
@@ -79,194 +76,100 @@ function VisualizeContent() {
     },
   ]);
 
-  // Mock file tree data
-  const fileTree: FileNode[] = [
-    {
-      id: "src",
-      name: "src",
-      type: "folder",
-      children: [
-        {
-          id: "src/components",
-          name: "components",
-          type: "folder",
-          children: [
-            {
-              id: "src/components/button.tsx",
-              name: "button.tsx",
-              type: "file",
-              content: `import React from 'react'
+  // Fetch file tree data
+  const fetchFileTree = async (repoUrl: string) => {
+    if (!repoUrl) return;
+    
+    setIsLoadingTree(true);
+    setTreeError(null);
+    
+    try {
+      const treeData = await treeService.getFileTree(repoUrl);
+      setFileTree(treeData);
+    } catch (error) {
+      console.error('Error fetching file tree:', error);
+      setTreeError(error instanceof Error ? error.message : 'Failed to load file tree');
+    } finally {
+      setIsLoadingTree(false);
+    }
+  };
 
-type ButtonProps = { label: string }
+  // Load file content
+  const loadFileContent = async (file: FileNode) => {
+    if (file.type === "folder") return;
+    
+    setIsLoadingFileContent(true);
+    
+    try {
+      const content = await treeService.getFileContent(file.id);
+      setSelectedFile({ ...file, content });
+    } catch (error) {
+      console.error('Error loading file content:', error);
+      setSelectedFile({ ...file, content: `Error loading file content: ${error instanceof Error ? error.message : 'Unknown error'}` });
+    } finally {
+      setIsLoadingFileContent(false);
+    }
+  };
 
-export function Button({ label }: ButtonProps) {
-  return (
-    <button className="btn">{label}</button>
-  )
-}
+  // Simple syntax highlighting function
+  const highlightCode = (code: string, language: string): string => {
+    // Check if this is placeholder content - don't highlight it
+    if (code.includes('File content preview not available yet') || 
+        code.includes('This would be fetched from the backend API')) {
+      return code
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
 
-// Usage
-// <Button label="Click me" />`,
-              size: "12 files",
-            },
-            {
-              id: "src/components/modal.tsx",
-              name: "modal.tsx",
-              type: "file",
-              content: `import React from 'react'
+    // Basic syntax highlighting for common languages
+    let highlighted = code
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
 
-interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  children: React.ReactNode
-}
+    if (language === 'js' || language === 'jsx' || language === 'ts' || language === 'tsx') {
+      highlighted = highlighted
+        .replace(/\b(const|let|var|function|if|else|for|while|return|import|export|from|class|interface|type|enum)\b/g, '<span style="color: #569cd6;">$1</span>')
+        .replace(/\b(true|false|null|undefined)\b/g, '<span style="color: #569cd6;">$1</span>')
+        .replace(/"([^"]*)"/g, '<span style="color: #ce9178;">"$1"</span>')
+        .replace(/'([^']*)'/g, '<span style="color: #ce9178;">\'$1\'</span>')
+        .replace(/\/\/.*$/gm, '<span style="color: #6a9955;">$&</span>')
+        .replace(/\/\*[\s\S]*?\*\//g, '<span style="color: #6a9955;">$&</span>');
+    } else if (language === 'py') {
+      highlighted = highlighted
+        .replace(/\b(def|class|if|else|elif|for|while|import|from|return|try|except|finally|with|as|in|and|or|not|True|False|None)\b/g, '<span style="color: #569cd6;">$1</span>')
+        .replace(/"([^"]*)"/g, '<span style="color: #ce9178;">"$1"</span>')
+        .replace(/'([^']*)'/g, '<span style="color: #ce9178;">\'$1\'</span>')
+        .replace(/#.*$/gm, '<span style="color: #6a9955;">$&</span>');
+    } else if (language === 'css') {
+      highlighted = highlighted
+        .replace(/([.#]?[a-zA-Z-]+)\s*\{/g, '<span style="color: #d7ba7d;">$1</span> {')
+        .replace(/([a-zA-Z-]+)\s*:/g, '<span style="color: #9cdcfe;">$1</span>:')
+        .replace(/(#[0-9a-fA-F]{3,6}|rgb\([^)]+\)|rgba\([^)]+\))/g, '<span style="color: #b5cea8;">$1</span>');
+    } else if (language === 'json') {
+      highlighted = highlighted
+        .replace(/"([^"]*)"\s*:/g, '<span style="color: #9cdcfe;">"$1"</span>:')
+        .replace(/"([^"]*)"/g, '<span style="color: #ce9178;">"$1"</span>')
+        .replace(/\b(true|false|null)\b/g, '<span style="color: #569cd6;">$1</span>');
+    }
 
-export function Modal({ isOpen, onClose, children }: ModalProps) {
-  if (!isOpen) return null
-  
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
-  )
-}`,
-              size: "5 files",
-            },
-          ],
-        },
-        {
-          id: "src/utils",
-          name: "utils",
-          type: "folder",
-          children: [
-            {
-              id: "src/utils/date.ts",
-              name: "date.ts",
-              type: "file",
-              content: `export function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  })
-}
-
-export function getRelativeTime(date: Date): string {
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
-  
-  if (days === 0) return 'Today'
-  if (days === 1) return 'Yesterday'
-  if (days < 7) return \`\${days} days ago\`
-  return formatDate(date)
-}`,
-              size: "3 files",
-            },
-          ],
-        },
-      ],
-    },
-    {
-      id: "config",
-      name: "config",
-      type: "folder",
-      children: [
-        {
-          id: "config/settings.yaml",
-          name: "settings.yaml",
-          type: "file",
-          content: `database:
-  host: localhost
-  port: 5432
-  name: myapp
-
-server:
-  port: 3000
-  cors:
-    enabled: true
-    origins: ["http://localhost:3000"]
-
-features:
-  auth: true
-  analytics: false`,
-          size: "2 files",
-        },
-      ],
-    },
-    {
-      id: "tests",
-      name: "tests",
-      type: "folder",
-      children: [
-        {
-          id: "tests/app.spec.ts",
-          name: "app.spec.ts",
-          type: "file",
-          content: `import { describe, it, expect } from 'vitest'
-import { add } from '../src/utils/math'
-
-describe('Math Utils', () => {
-  it('should add two numbers correctly', () => {
-    expect(add(2, 3)).toBe(5)
-    expect(add(-1, 1)).toBe(0)
-    expect(add(0, 0)).toBe(0)
-  })
-})`,
-          size: "1 file",
-        },
-      ],
-    },
-    {
-      id: "package.json",
-      name: "package.json",
-      type: "file",
-      content: `{
-  "name": "my-app",
-  "version": "1.0.0",
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "test": "vitest"
-  },
-  "dependencies": {
-    "next": "^14.0.0",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0"
-  },
-  "devDependencies": {
-    "vitest": "^1.0.0",
-    "@types/react": "^18.0.0"
-  }
-}`,
-      size: "1 file",
-    },
-    {
-      id: "pnpm-workspace.yaml",
-      name: "pnpm-workspace.yaml",
-      type: "file",
-      content: `packages:
-  - 'packages/*'
-  - 'apps/*'
-
-shared-workspace-lockfile: true`,
-      size: "1 file",
-    },
-  ];
+    return highlighted;
+  };
 
   useEffect(() => {
     // First try to get from localStorage
     const storedRepoData = LocalStorageService.getRepositoryData();
     if (storedRepoData) {
       setCurrentRepo(storedRepoData.github_url);
+      fetchFileTree(storedRepoData.github_url);
     } else {
       // Fallback to URL params
       const repo = searchParams.get("repo");
       if (repo) {
-        setCurrentRepo(decodeURIComponent(repo));
+        const decodedRepo = decodeURIComponent(repo);
+        setCurrentRepo(decodedRepo);
+        fetchFileTree(decodedRepo);
       }
     }
   }, [searchParams]);
@@ -327,7 +230,7 @@ shared-workspace-lockfile: true`,
               style={{ paddingLeft: `${level * 16 + 8}px` }}
               onClick={() => {
                 if (node.type === "file") {
-                  setSelectedFile(node);
+                  loadFileContent(node);
                 } else {
                   toggleFolder(node.id);
                 }
@@ -344,7 +247,10 @@ shared-workspace-lockfile: true`,
             ) : (
               <File className="h-4 w-4 text-gray-400 group-hover:text-gray-300 transition-colors" />
             )}
-            <span className="text-sm group-hover:text-white transition-colors">{node.name}</span>
+            <span className="text-sm group-hover:text-white transition-colors">
+              {node.name}
+              {node.ext && <span className="text-xs text-gray-500 ml-1">.{node.ext}</span>}
+            </span>
             {node.size && (
               <span className="text-xs text-gray-500 ml-auto group-hover:text-gray-400 transition-colors">{node.size}</span>
             )}
@@ -600,60 +506,153 @@ shared-workspace-lockfile: true`,
               {/* File Tree */}
               <div className="w-1/2 border-r border-gray-700 flex flex-col">
                 <div className="p-4 border-b border-gray-700">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search files, folders..."
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search files, folders..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      />
+                    </div>
+                    <button
+                      onClick={() => currentRepo && fetchFileTree(currentRepo)}
+                      disabled={isLoadingTree}
+                      className="px-3 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-2"
+                      title="Refresh file tree"
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isLoadingTree ? 'animate-spin' : ''}`} />
+                    </button>
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto p-2">
-                  {renderFileTree(fileTree)}
+                  {isLoadingTree ? (
+                    <div className="flex items-center justify-center h-32">
+                      <div className="text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-2 border-purple-500 border-t-transparent mx-auto mb-2"></div>
+                        <p className="text-sm text-gray-400">Loading file tree...</p>
+                      </div>
+                    </div>
+                  ) : treeError ? (
+                    <div className="flex items-center justify-center h-32">
+                      <div className="text-center">
+                        <div className="text-red-400 mb-2">⚠️</div>
+                        <p className="text-sm text-red-400 mb-2">Failed to load file tree</p>
+                        <p className="text-xs text-gray-500">{treeError}</p>
+                        <button
+                          onClick={() => currentRepo && fetchFileTree(currentRepo)}
+                          className="mt-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs transition-colors"
+                        >
+                          Retry
+                        </button>
+                      </div>
+                    </div>
+                  ) : fileTree.length === 0 ? (
+                    <div className="flex items-center justify-center h-32">
+                      <div className="text-center">
+                        <div className="text-gray-400 mb-2">📁</div>
+                        <p className="text-sm text-gray-400">No files found</p>
+                      </div>
+                    </div>
+                  ) : (
+                    renderFileTree(fileTree)
+                  )}
                 </div>
               </div>
 
-              {/* Code Preview */}
-              <div className="w-1/2 flex flex-col">
-                <div className="p-4 border-b border-gray-700">
+              <div className="w-1/2 flex flex-col bg-[#1e1e1e]">
+                <div className="px-4 py-3 border-b border-gray-700 bg-[#2d2d30]">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-medium flex items-center gap-2">
-                      <Code className="h-4 w-4" />
-                      {selectedFile
-                        ? `Preview: ${selectedFile.name}`
-                        : "Select a file to preview"}
-                    </h3>
+                    <div className="flex items-center gap-3">
+                      <Code className="h-4 w-4 text-blue-400" />
+                      <h3 className="font-medium text-gray-200">
+                        {selectedFile ? selectedFile.name : "No file selected"}
+                      </h3>
+                      {selectedFile && selectedFile.ext && (
+                        <span className="text-xs text-gray-400 bg-gray-700/50 px-2 py-0.5 rounded">
+                          {selectedFile.ext}
+                        </span>
+                      )}
+                    </div>
                     {selectedFile && (
-                      <span className="text-xs text-gray-400 bg-gray-700 px-2 py-1 rounded">
-                        Read-only
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500 mr-2">Read-only</span>
+                        <button 
+                          onClick={() => {
+                            if (selectedFile.content) {
+                              navigator.clipboard.writeText(selectedFile.content);
+                            }
+                          }}
+                          className="bg-gray-700/50 hover:bg-gray-600/50 text-gray-300 px-3 py-1 rounded text-xs transition-colors flex items-center gap-1"
+                        >
+                          <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                          Copy
+                        </button>
+                      </div>
                     )}
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-hidden flex">
                   {selectedFile ? (
-                    <div className="relative">
-                      <div className="absolute top-2 right-2 flex gap-2 z-10">
-                        <button className="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs transition-colors">
-                          Copy
-                        </button>
-                        <button className="bg-gray-700 hover:bg-gray-600 text-gray-300 px-2 py-1 rounded text-xs transition-colors">
-                          Raw
-                        </button>
-                      </div>
-                      <pre className="text-sm text-gray-300 whitespace-pre-wrap font-mono bg-gray-900 p-6 rounded-lg border border-gray-700 shadow-inner overflow-x-auto">
-                        {selectedFile.content}
-                      </pre>
-                    </div>
+                    <>
+                      {isLoadingFileContent ? (
+                        <div className="flex-1 flex items-center justify-center">
+                          <div className="text-center">
+                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-500 border-t-transparent mx-auto mb-2"></div>
+                            <p className="text-sm text-gray-400">Loading file content...</p>
+                          </div>
+                        </div>
+                      ) : selectedFile.content ? (
+                        <>
+                          {/* Line Numbers */}
+                          <div className="bg-[#1e1e1e] border-r border-gray-800 px-4 py-4 text-right select-none overflow-y-auto">
+                            {selectedFile.content.split('\n').map((_, i) => (
+                              <div key={i} className="text-xs text-gray-600 leading-6 font-mono">
+                                {i + 1}
+                              </div>
+                            ))}
+                          </div>
+                          {/* Code Content */}
+                          <div className="flex-1 overflow-auto">
+                            <pre className="p-4 text-sm leading-6 font-mono">
+                              <code className="text-gray-300" dangerouslySetInnerHTML={{ 
+                                __html: highlightCode(selectedFile.content, selectedFile.ext || '') 
+                              }} />
+                            </pre>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="flex-1 flex items-center justify-center text-gray-400">
+                          <div className="text-center p-8">
+                            <File className="h-16 w-16 mx-auto mb-4 text-gray-600" />
+                            <h3 className="text-lg font-semibold mb-2 text-gray-300">{selectedFile.name}</h3>
+                            <p className="text-sm mb-4">
+                              {selectedFile.type === "folder" 
+                                ? "This is a folder containing files and subfolders"
+                                : `File type: ${selectedFile.ext || 'unknown'}`}
+                            </p>
+                            <button
+                              onClick={() => loadFileContent(selectedFile)}
+                              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm transition-colors"
+                            >
+                              Load File Content
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   ) : (
-                    <div className="text-center text-gray-400 mt-20">
-                      <div className="bg-gray-800 p-8 rounded-lg border border-gray-700">
-                        <File className="h-16 w-16 mx-auto mb-4 text-gray-600" />
-                        <h3 className="text-lg font-semibold mb-2">No file selected</h3>
-                        <p>Select a file from the tree to view its contents</p>
+                    <div className="flex-1 flex items-center justify-center text-gray-400">
+                      <div className="text-center p-8">
+                        <div className="bg-[#2d2d30] p-8 rounded-lg border border-gray-700">
+                          <File className="h-16 w-16 mx-auto mb-4 text-gray-600" />
+                          <h3 className="text-lg font-semibold mb-2 text-gray-300">No file selected</h3>
+                          <p className="text-sm">Select a file from the tree to view its contents</p>
+                        </div>
                       </div>
                     </div>
                   )}
