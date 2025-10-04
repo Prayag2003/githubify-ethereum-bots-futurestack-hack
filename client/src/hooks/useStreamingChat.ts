@@ -105,6 +105,9 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
       if (!globalSocketListeners.has(event)) {
         socket.on(event, handler);
         globalSocketListeners.add(event);
+        console.log(`🔌 Added listener for event: ${event}`);
+      } else {
+        console.log(`🔌 Listener already exists for event: ${event}`);
       }
     };
 
@@ -160,7 +163,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
     });
 
     addListenerOnce("query_complete", (data: { text: string }) => {
-      console.log("✅ Query complete");
+      console.log("✅ Query complete with data:", data);
       
       // Set streaming state to complete
       setStreamingState(prev => ({
@@ -169,6 +172,17 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
         currentStreamingMessage: "",
       }));
       setIsLoading(false);
+
+      // Simple approach: always add the message
+      const assistantMessage: ChatMessage = {
+        id: `complete-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        role: "assistant",
+        content: data.text,
+        timestamp: new Date(),
+      };
+      
+      console.log("✅ Adding query_complete message:", assistantMessage);
+      setMessages(prev => [...prev, assistantMessage]);
 
       // Reset global active message if this was the active one
       if (globalActiveMessageId === currentAssistantMessageIdRef.current) {
@@ -249,8 +263,44 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
       console.error("❌ Socket reconnection error:", error);
     });
 
-    // Simple streaming - no complex queue needed
-    console.log("🚀 Simple streaming initialized");
+    addListenerOnce("query_error", (data: { error: string; repo_id: string }) => {
+      console.error("Query error:", data.error);
+      setStreamingState(prev => ({
+        ...prev,
+        isStreaming: false,
+      }));
+      setIsLoading(false);
+
+      // Update the assistant message with error
+      const errorMessage = "Sorry, there was an error processing your request. Please try again.";
+      if (currentAssistantMessageIdRef.current) {
+        setMessages(prev => {
+          const messageExists = prev.some(
+            msg => msg.id === currentAssistantMessageIdRef.current
+          );
+
+          if (!messageExists && currentAssistantMessageIdRef.current) {
+            const assistantMessage: ChatMessage = {
+              id: currentAssistantMessageIdRef.current,
+              role: "assistant",
+              content: errorMessage,
+              timestamp: new Date(),
+            };
+            return [...prev, assistantMessage];
+          } else {
+            return prev.map(msg =>
+              msg.id === currentAssistantMessageIdRef.current
+                ? { ...msg, content: errorMessage }
+                : msg
+            );
+          }
+        });
+      }
+
+      // Reset streaming content and refs
+      streamingContentRef.current = "";
+      currentAssistantMessageIdRef.current = null;
+    });
 
     isInitializedRef.current = true;
 
@@ -311,6 +361,7 @@ export function useStreamingChat(options: StreamingChatOptions = {}) {
       setIsLoading(true);
       currentAssistantMessageIdRef.current = assistantMessageId;
       console.log(`📌 Set current assistant message ID: ${currentAssistantMessageIdRef.current}`);
+      console.log(`📌 Global active message ID: ${globalActiveMessageId}`);
 
       setStreamingState(prev => ({
         ...prev,

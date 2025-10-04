@@ -338,5 +338,5 @@ async def handle_query_stream(repo_id: str, query: str, mode: str = "fast", sock
     except Exception as e:
         logger.exception("Streaming query error")
         if socket_id and sio:
-            await sio.emit("query_complete", {"text": f"Error: {str(e)}"}, to=socket_id)
+            await sio.emit("query_error", {"error": str(e), "repo_id": repo_id}, to=socket_id)
         return f"Error during streaming query: {e}"

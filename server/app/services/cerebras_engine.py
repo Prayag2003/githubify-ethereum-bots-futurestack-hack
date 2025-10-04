@@ -60,29 +60,36 @@ class CerebrasLLMClientAsync:
         """
         Stream a completion using Cerebras and optionally send via Socket.IO.
         """
-        print("SIO: ", sio)
-        messages = [{"role": "user", "content": prompt}]
-        if system_prompt:
-            messages.insert(0, {"role": "system", "content": system_prompt})
+        try:
+            print("SIO: ", sio)
+            messages = [{"role": "user", "content": prompt}]
+            if system_prompt:
+                messages.insert(0, {"role": "system", "content": system_prompt})
 
-        # Create async generator with stream=True
-        stream = await self.client.chat.completions.create(
-            messages=messages,
-            model=model or self.default_model,
-            stream=True  # streaming mode
-        )
+            # Create async generator with stream=True
+            stream = await self.client.chat.completions.create(
+                messages=messages,
+                model=model or self.default_model,
+                stream=True  # streaming mode
+            )
 
-        full_text = ""
-        async for chunk in stream:  # async iteration
-            delta = chunk.choices[0].delta.content or ""
-            full_text += delta
+            full_text = ""
+            async for chunk in stream:  # async iteration
+                delta = chunk.choices[0].delta.content or ""
+                full_text += delta
 
-            # If Socket.IO is provided, emit incrementally
+                # If Socket.IO is provided, emit incrementally
+                if socket_id and sio:
+                    await sio.emit("query_chunk", {"text": delta}, to=socket_id)
+
+            # Send final completion event
             if socket_id and sio:
-                await sio.emit("query_chunk", {"text": delta}, to=socket_id)
+                await sio.emit("query_complete", {"text": full_text}, to=socket_id)
 
-        # Send final completion event
-        if socket_id and sio:
-            await sio.emit("query_complete", {"text": full_text}, to=socket_id)
-
-        return full_text
+            return full_text
+            
+        except Exception as e:
+            # Emit error event instead of completion
+            if socket_id and sio:
+                await sio.emit("query_error", {"error": str(e), "repo_id": "unknown"}, to=socket_id)
+            raise
