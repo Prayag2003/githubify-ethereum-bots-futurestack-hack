@@ -11,36 +11,26 @@ def _get_repo_id(github_url: str, length: int = 20) -> str:
     sha = hashlib.sha256(github_url.encode("utf-8")).hexdigest()
     return sha[:length]
 
-def clone_repo(github_url: str, token: Optional[str] = None) -> str:
-    """Clone repo from GitHub and return stable repo_id."""
+def clone_repo(github_url: str, token: Optional[str] = None) -> tuple[str, bool]:
     repo_id = _get_repo_id(github_url)
     repo_path = os.path.join(BASE_DIR, repo_id)
 
     if not os.path.exists(repo_path):
         os.makedirs(repo_path, exist_ok=True)
-        # Validate repository existence via API call first
+        print(f"Cloning fresh repo into {repo_path}...")
+
         repo_api_url = github_url.replace("https://github.com/", "https://api.github.com/repos/")
         headers = {'Authorization': f'token {token}'} if token else {}
         response = requests.get(repo_api_url, headers=headers)
-        
-        if response.status_code == 404:
-            raise ValueError(f"Repository not found or invalid: {github_url}")
-        if response.status_code == 401:
-            raise ValueError("Authentication failed. Check your token and permissions.")
-            
-        try:
-            clone_url = github_url
-            if token:
-                parsed_url = github_url.replace("https://", f"https://oauth2:{token}@")
-                clone_url = parsed_url
+        response.raise_for_status()
 
-            subprocess.run(["git", "clone", clone_url, repo_path], check=True)
-            print("Repository cloned successfully.")
-        except subprocess.CalledProcessError as e:
-            if "Authentication failed" in str(e):
-                raise ValueError("Authentication failed for private repository. Is the token correct?")
-            raise e
+        clone_url = github_url
+        if token:
+            clone_url = github_url.replace("https://", f"https://oauth2:{token}@")
+
+        subprocess.run(["git", "clone", clone_url, repo_path], check=True)
+        print("Repository cloned successfully.")
+        return repo_id, False  # False = not already cloned
     else:
         print(f"Repo already cloned at {repo_path}")
-
-    return repo_id
+        return repo_id, True   # True = already cloned
