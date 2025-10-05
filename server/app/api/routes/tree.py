@@ -15,7 +15,7 @@ ignore_dirs = [
             ".next", ".nuxt", "coverage", "migrations", "static", "media", "uploads"
         ]
 
-@router.get("/code-tree")
+@router.post("/code-tree")
 def repo_code_tree(payload: RepoRequest):
     """Return folder-wise hierarchical tree of the repo."""
     try:

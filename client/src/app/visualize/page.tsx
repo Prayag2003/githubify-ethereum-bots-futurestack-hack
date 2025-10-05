@@ -84,7 +84,7 @@ function VisualizeContent() {
     setTreeError(null);
 
     try {
-      const treeData = await treeService.getFileTree();
+      const treeData = await treeService.getFileTree(repoUrl);
       setFileTree(treeData);
     } catch (error) {
       console.error('Error fetching file tree:', error);

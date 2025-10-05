@@ -29,7 +29,7 @@ export interface FileNode {
 }
 
 class TreeService {
-  private baseUrl = process.env.NEXT_PUBLIC_API_URL;
+  private baseUrl = process.env.NEXT_PUBLIC_SERVER_URL;
 
   /**
    * Convert API tree structure to component-friendly format
@@ -80,10 +80,16 @@ class TreeService {
   /**
    * Fetch file tree data for a repository
    */
-  async getFileTree(): Promise<FileNode[]> {
+  async getFileTree(githubUrl: string): Promise<FileNode[]> {
     try {
       const response = await fetch(`${this.baseUrl}/tree/code-tree`, {
-        method: 'GET',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          github_url: githubUrl
+        }),
       });
 
       if (!response.ok) {
