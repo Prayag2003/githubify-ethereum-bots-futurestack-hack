@@ -20,7 +20,7 @@ def repo_code_tree(payload: RepoRequest):
     """Return folder-wise hierarchical tree of the repo."""
     try:
         logger.info(f"Cloning: {payload.github_url}")
-        repo_id = repo_manager.clone_repo(payload.github_url)
+        repo_id, _ = repo_manager.clone_repo(payload.github_url)
         repo_path = f"repos/{repo_id}"
 
         logger.info(f"Building code tree for {repo_id}")
