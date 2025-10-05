@@ -52,9 +52,10 @@ export class RepositoryService {
       const response = await fetch(
         `${this.baseUrl}/diagram/diagram?repo_id=${encodeURIComponent(repoId)}`,
         {
-          method: "GET",
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true"
           },
         }
       );
