@@ -4,6 +4,8 @@
 
 ### Ethereum Bots Team
 
+[![YouTube](https://img.shields.io/badge/Watch%20Demo-%23FF0000.svg?&style=for-the-badge&logo=YouTube&logoColor=white)](https://youtu.be/ZbVsCiwMjb8)
+
 This project was developed by:
 
 - **Manav Pandya** - Core Architecture & Backend Development
