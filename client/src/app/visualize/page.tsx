@@ -286,14 +286,18 @@ function VisualizeContent() {
           <>
             {/* Sidebar Header */}
             <div className="p-4 border-b border-gray-700">
-              <div className="flex items-center gap-2 mb-4">
+              <div
+                className="flex items-center gap-2 mb-4 cursor-pointer hover:scale-105 transition-transform"
+                onClick={() => router.push("/")}
+              >
                 <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
                   <Github className="h-6 w-6 text-white" />
                 </div>
                 <span className="font-bold text-lg bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                  Codebase AI
+                  Githubify AI
                 </span>
               </div>
+
               <div className="text-sm text-gray-400 mb-2">Repository</div>
               <div className="text-sm font-mono bg-gray-700 px-3 py-2 rounded-lg border border-gray-600 truncate max-w-full" title={currentRepo || "github.com/owner/project"}>
                 <span className="block truncate">
@@ -423,14 +427,18 @@ function VisualizeContent() {
             )}
           </button>
 
-          <div className="flex items-center gap-2">
+          <div
+            className="flex items-center gap-2 cursor-pointer hover:scale-105 transition-transform"
+            onClick={() => router.push("/")}
+          >
             <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-1.5 rounded-lg">
               <Github className="h-5 w-5 text-white" />
             </div>
             <span className="font-bold text-lg bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-              Codebase AI
+              Githubify AI
             </span>
           </div>
+
 
           <div className="flex items-center gap-4 ml-8">
             <button
